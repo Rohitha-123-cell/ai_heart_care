@@ -1,0 +1,9 @@
+{
+  "python.defaultInterpreterPath": "C:\\Program Files\\Python313\\python.exe",
+  "python.analysis.extraPaths": [
+    "C:\\Users\\rohit\\AppData\\Roaming\\Python\\Python313\\site-packages"
+  ],
+  "python.analysis.autoSearchPaths": true,
+  "python.analysis.useLibraryCodeForTypes": true,
+  "java.configuration.updateBuildConfiguration": "interactive"
+}
