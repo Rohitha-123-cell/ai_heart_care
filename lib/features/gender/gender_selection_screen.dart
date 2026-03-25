@@ -37,7 +37,6 @@ class _GenderSelectionContent extends StatelessWidget {
             SnackBar(
               content: Text(state.errorMessage),
               backgroundColor: Colors.orange,
-              behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(10),
               ),
@@ -53,7 +52,10 @@ class _GenderSelectionContent extends StatelessWidget {
               MaterialPageRoute(builder: (_) => const PatientScreen()),
             );
           } else if (state.destination == 'health_input') {
-            Navigator.pop(context);
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (_) => const HealthInputScreen()),
+            );
           }
         }
       },
@@ -78,11 +80,14 @@ class _GenderSelectionContent extends StatelessWidget {
             ),
           ),
           body: SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 720),
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
                   // Question text
                   const Text(
                     "What is your sex?",
@@ -153,7 +158,6 @@ class _GenderSelectionContent extends StatelessWidget {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
                             content: Text('Report feature coming soon'),
-                            behavior: SnackBarBehavior.floating,
                           ),
                         );
                       },
@@ -202,6 +206,8 @@ class _GenderSelectionContent extends StatelessWidget {
                     ),
                   ),
                 ],
+                  ),
+                ),
               ),
             ),
           ),

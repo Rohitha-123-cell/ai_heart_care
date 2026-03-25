@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../bloc/auth/auth_bloc.dart';
 import '../../bloc/auth/auth_event.dart';
 import '../../core/constants/colors.dart';
+import '../../core/utils/responsive.dart';
 import '../../services/auth_service.dart';
 import 'login_screen.dart';
 
@@ -82,8 +83,14 @@ class _LogoutScreenState extends State<LogoutScreen>
 
   @override
   Widget build(BuildContext context) {
-    double width = MediaQuery.of(context).size.width;
-    double height = MediaQuery.of(context).size.height;
+    final screenSize = MediaQuery.of(context).size;
+    final width = screenSize.width;
+    final height = screenSize.height;
+    final contentWidth = width.clamp(0.0, 520.0).toDouble();
+    final iconSize = contentWidth * 0.35;
+    final titleSize = (contentWidth * 0.09).clamp(32.0, 54.0);
+    final subtitleSize = (contentWidth * 0.04).clamp(16.0, 22.0);
+    final horizontalPadding = width >= 900 ? 32.0 : 20.0;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -123,75 +130,79 @@ class _LogoutScreenState extends State<LogoutScreen>
 
             // Main Content
             SafeArea(
-              child: AnimatedBuilder(
-                animation: _controller,
-                builder: (context, child) {
-                  return Transform.scale(
-                    scale: _scaleAnimation.value,
-                    child: Opacity(
-                      opacity: _fadeAnimation.value,
-                      child: child,
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  return AnimatedBuilder(
+                    animation: _controller,
+                    builder: (context, child) {
+                      return Transform.scale(
+                        scale: _scaleAnimation.value,
+                        child: Opacity(
+                          opacity: _fadeAnimation.value,
+                          child: child,
+                        ),
+                      );
+                    },
+                    child: SingleChildScrollView(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: horizontalPadding,
+                        vertical: 24,
+                      ),
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(
+                          minHeight: constraints.maxHeight - 48,
+                        ),
+                        child: Center(
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(
+                              maxWidth: 620,
+                            ),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                _buildAIcon(iconSize),
+                                SizedBox(height: (height * 0.05).clamp(20.0, 32.0)),
+                                Text(
+                                  "Goodbye!",
+                                  style: TextStyle(
+                                    fontSize: titleSize,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                    letterSpacing: 2,
+                                    shadows: [
+                                      Shadow(
+                                        color: Colors.black.withOpacity(0.3),
+                                        blurRadius: 10,
+                                        offset: const Offset(2, 2),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                                Text(
+                                  "Your health journey with AI continues",
+                                  style: TextStyle(
+                                    fontSize: subtitleSize,
+                                    color: Colors.white70,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                                SizedBox(height: (height * 0.06).clamp(24.0, 40.0)),
+                                _buildInfoCard(contentWidth, height),
+                                SizedBox(height: (height * 0.04).clamp(18.0, 28.0)),
+                                _buildLogoutButton(contentWidth, height),
+                                const SizedBox(height: 16),
+                                _buildCancelButton(contentWidth, height),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
                     ),
                   );
                 },
-                child: Padding(
-                  padding: EdgeInsets.symmetric(horizontal: width * 0.08),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      // AI Brain Icon with pulsing animation
-                      _buildAIcon(width),
-
-                      SizedBox(height: height * 0.05),
-
-                      // Title
-                      Text(
-                        "Goodbye!",
-                        style: TextStyle(
-                          fontSize: width * 0.09,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                          letterSpacing: 2,
-                          shadows: [
-                            Shadow(
-                              color: Colors.black.withOpacity(0.3),
-                              blurRadius: 10,
-                              offset: const Offset(2, 2),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      SizedBox(height: height * 0.02),
-
-                      // Subtitle
-                      Text(
-                        "Your health journey with AI continues",
-                        style: TextStyle(
-                          fontSize: width * 0.04,
-                          color: Colors.white70,
-                          fontWeight: FontWeight.w500,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-
-                      SizedBox(height: height * 0.08),
-
-                      // Info card
-                      _buildInfoCard(width, height),
-
-                      SizedBox(height: height * 0.06),
-
-                      // Logout Button
-                      _buildLogoutButton(width, height),
-
-                      SizedBox(height: height * 0.03),
-
-                      // Cancel Button
-                      _buildCancelButton(width, height),
-                    ],
-                  ),
-                ),
               ),
             ),
           ],
@@ -251,10 +262,10 @@ class _LogoutScreenState extends State<LogoutScreen>
     );
   }
 
-  Widget _buildAIcon(double width) {
+  Widget _buildAIcon(double size) {
     return Container(
-      width: width * 0.35,
-      height: width * 0.35,
+      width: size,
+      height: size,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         gradient: const LinearGradient(
@@ -279,8 +290,8 @@ class _LogoutScreenState extends State<LogoutScreen>
         children: [
           // Outer ring
           Container(
-            width: width * 0.32,
-            height: width * 0.32,
+            width: size * 0.9,
+            height: size * 0.9,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               border: Border.all(
@@ -291,8 +302,8 @@ class _LogoutScreenState extends State<LogoutScreen>
           ),
           // Inner ring
           Container(
-            width: width * 0.24,
-            height: width * 0.24,
+            width: size * 0.68,
+            height: size * 0.68,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               border: Border.all(
@@ -304,24 +315,24 @@ class _LogoutScreenState extends State<LogoutScreen>
           // Brain icon
           Icon(
             Icons.psychology,
-            size: width * 0.15,
+            size: size * 0.42,
             color: Colors.white,
           ),
           // AI dots
           Positioned(
-            top: width * 0.04,
+            top: size * 0.11,
             child: _buildAIDot(),
           ),
           Positioned(
-            bottom: width * 0.04,
+            bottom: size * 0.11,
             child: _buildAIDot(),
           ),
           Positioned(
-            left: width * 0.04,
+            left: size * 0.11,
             child: _buildAIDot(),
           ),
           Positioned(
-            right: width * 0.04,
+            right: size * 0.11,
             child: _buildAIDot(),
           ),
         ],
@@ -355,6 +366,7 @@ class _LogoutScreenState extends State<LogoutScreen>
 
   Widget _buildInfoCard(double width, double height) {
     return Container(
+      width: double.infinity,
       padding: EdgeInsets.all(width * 0.05),
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.1),
@@ -377,7 +389,7 @@ class _LogoutScreenState extends State<LogoutScreen>
                 child: Icon(
                   Icons.check_circle,
                   color: Colors.greenAccent,
-                  size: width * 0.06,
+                  size: (width * 0.06).clamp(22.0, 30.0),
                 ),
               ),
               SizedBox(width: width * 0.03),
@@ -389,7 +401,7 @@ class _LogoutScreenState extends State<LogoutScreen>
                       "Session Secured",
                       style: TextStyle(
                         color: Colors.white,
-                        fontSize: width * 0.04,
+                        fontSize: (width * 0.04).clamp(18.0, 24.0),
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -397,7 +409,7 @@ class _LogoutScreenState extends State<LogoutScreen>
                       "Your data is safe with us",
                       style: TextStyle(
                         color: Colors.white60,
-                        fontSize: width * 0.028,
+                        fontSize: (width * 0.028).clamp(13.0, 16.0),
                       ),
                     ),
                   ],
@@ -408,8 +420,10 @@ class _LogoutScreenState extends State<LogoutScreen>
           SizedBox(height: height * 0.02),
           const Divider(color: Colors.white24),
           SizedBox(height: height * 0.02),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
+          Wrap(
+            alignment: WrapAlignment.spaceAround,
+            spacing: 24,
+            runSpacing: 16,
             children: [
               _buildStatItem("Health", "85%", Colors.cyan),
               _buildStatItem("Score", "92%", Colors.green),
@@ -450,7 +464,7 @@ class _LogoutScreenState extends State<LogoutScreen>
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 300),
         width: double.infinity,
-        padding: EdgeInsets.symmetric(vertical: height * 0.022),
+        padding: EdgeInsets.symmetric(vertical: (height * 0.018).clamp(14.0, 18.0)),
         decoration: BoxDecoration(
           gradient: const LinearGradient(
             colors: [
@@ -483,14 +497,14 @@ class _LogoutScreenState extends State<LogoutScreen>
                     Icon(
                       Icons.logout,
                       color: Colors.white,
-                      size: width * 0.05,
+                      size: (width * 0.05).clamp(20.0, 26.0),
                     ),
                     SizedBox(width: width * 0.02),
                     Text(
                       "Logout",
                       style: TextStyle(
                         color: Colors.white,
-                        fontSize: width * 0.045,
+                        fontSize: (width * 0.045).clamp(18.0, 24.0),
                         fontWeight: FontWeight.bold,
                         letterSpacing: 1,
                       ),
@@ -506,19 +520,20 @@ class _LogoutScreenState extends State<LogoutScreen>
     return TextButton(
       onPressed: () => Navigator.pop(context),
       child: Row(
+        mainAxisSize: MainAxisSize.min,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(
             Icons.arrow_back,
             color: Colors.white60,
-            size: width * 0.04,
+            size: (width * 0.04).clamp(16.0, 22.0),
           ),
           SizedBox(width: width * 0.02),
           Text(
             "Cancel - Go Back",
             style: TextStyle(
               color: Colors.white60,
-              fontSize: width * 0.035,
+              fontSize: (width * 0.035).clamp(14.0, 18.0),
               fontWeight: FontWeight.w500,
             ),
           ),

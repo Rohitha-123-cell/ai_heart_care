@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -19,6 +20,7 @@ class _MedicineScannerState extends State<MedicineScanner>
   String aiExplanation = "";
   bool isLoading = false;
   bool showManualInput = true;
+  String selectedScanSource = "gallery";
 
   final TextEditingController medicineNameController = TextEditingController();
   final picker = ImagePicker();
@@ -29,7 +31,7 @@ class _MedicineScannerState extends State<MedicineScanner>
   @override
   void initState() {
     super.initState();
-    showManualInput = kIsWeb; // web defaults to search; mobile defaults to scan
+    showManualInput = false;
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 800),
       vsync: this,
@@ -44,14 +46,18 @@ class _MedicineScannerState extends State<MedicineScanner>
   }
 
   Future<void> pickImage() async {
-    if (kIsWeb) return;
-    final picked = await picker.pickImage(source: ImageSource.camera);
+    await _pickImageFromSource(kIsWeb ? ImageSource.gallery : ImageSource.camera);
+  }
+
+  Future<void> _pickImageFromSource(ImageSource source) async {
+    final picked = await picker.pickImage(source: source, imageQuality: 85);
     if (picked == null) return;
 
     final bytes = await picked.readAsBytes();
     setState(() {
       imageBytes = bytes;
       showManualInput = false;
+      selectedScanSource = source == ImageSource.camera ? "camera" : "gallery";
       extractedText = "Scanning medicine...";
       aiExplanation = "";
       isLoading = true;
@@ -123,15 +129,15 @@ class _MedicineScannerState extends State<MedicineScanner>
                 child: Column(
                   children: [
                     _buildAppBar(),
-                    if (!kIsWeb) _buildTabSelector(),
+                    _buildTabSelector(),
                     if (kIsWeb) _buildWebInfoBanner(),
                     Expanded(
                       child: SingleChildScrollView(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                         child: Column(
                           children: [
-                            if (!showManualInput && !kIsWeb) _buildScanModeUI(),
-                            if (showManualInput || kIsWeb) _buildSearchModeUI(),
+                            if (!showManualInput) _buildScanModeUI(),
+                            if (showManualInput) _buildSearchModeUI(),
                             const SizedBox(height: 16),
                             if (isLoading) _buildLoadingCard(),
                             if (!isLoading && aiExplanation.isNotEmpty) _buildResultCard(),
@@ -199,7 +205,7 @@ class _MedicineScannerState extends State<MedicineScanner>
             SizedBox(width: 8),
             Expanded(
               child: Text(
-                "Camera scanning unavailable on web. Use the search feature below.",
+                "You can upload a medicine photo on web or search by medicine name below.",
                 style: TextStyle(color: Colors.white70, fontSize: 12),
               ),
             ),
@@ -259,7 +265,7 @@ class _MedicineScannerState extends State<MedicineScanner>
               Text("How to Scan", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)),
               SizedBox(height: 8),
               Text(
-                "1. Take a clear photo of medicine packaging\n2. Ensure text is readable\n3. Our AI will identify the medicine",
+                "1. Upload or capture a clear medicine photo\n2. Ensure text is readable\n3. Our AI will identify the medicine and explain its use",
                 style: TextStyle(color: Colors.white70, fontSize: 13, height: 1.6),
                 textAlign: TextAlign.center,
               ),
@@ -267,25 +273,62 @@ class _MedicineScannerState extends State<MedicineScanner>
           ),
         ),
         const SizedBox(height: 16),
-        GestureDetector(
-          onTap: pickImage,
-          child: Container(
-            padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(colors: [Color(0xFF00D9FF), Color(0xFF0099FF)]),
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [BoxShadow(color: const Color(0xFF00D9FF).withValues(alpha: 0.5), blurRadius: 20, offset: const Offset(0, 8))],
-            ),
-            child: const Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.camera_alt, color: Colors.white, size: 24),
-                SizedBox(width: 10),
-                Text("Scan Medicine Package", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
-              ],
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final stacked = constraints.maxWidth < 480;
+            final uploadButton = _buildScanActionButton(
+              label: "Upload Photo",
+              icon: Icons.upload_file,
+              filled: true,
+              onTap: isLoading
+                  ? null
+                  : () => _pickImageFromSource(ImageSource.gallery),
+            );
+            final cameraButton = _buildScanActionButton(
+              label: "Use Camera",
+              icon: Icons.camera_alt,
+              filled: false,
+              onTap: isLoading
+                  ? null
+                  : () => _pickImageFromSource(ImageSource.camera),
+            );
+
+            return stacked
+                ? Column(
+                    children: [
+                      SizedBox(width: double.infinity, child: uploadButton),
+                      if (!kIsWeb) const SizedBox(height: 12),
+                      if (!kIsWeb)
+                        SizedBox(width: double.infinity, child: cameraButton),
+                    ],
+                  )
+                : Row(
+                    children: [
+                      Expanded(child: uploadButton),
+                      if (!kIsWeb) const SizedBox(width: 12),
+                      if (!kIsWeb) Expanded(child: cameraButton),
+                    ],
+                  );
+          },
+        ),
+        if (imageBytes != null) ...[
+          const SizedBox(height: 12),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.green.withValues(alpha: 0.16),
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(color: Colors.green.withValues(alpha: 0.3)),
+              ),
+              child: Text(
+                "Source: ${selectedScanSource == "camera" ? "Camera capture" : "Uploaded photo"}",
+                style: const TextStyle(color: Colors.greenAccent, fontSize: 12, fontWeight: FontWeight.w600),
+              ),
             ),
           ),
-        ),
+        ],
         if (imageBytes != null) ...[
           const SizedBox(height: 16),
           Container(
@@ -299,8 +342,77 @@ class _MedicineScannerState extends State<MedicineScanner>
               child: Image.memory(imageBytes!, fit: BoxFit.cover, width: double.infinity),
             ),
           ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: isLoading ? null : () => _pickImageFromSource(ImageSource.gallery),
+                  icon: const Icon(Icons.refresh),
+                  label: const Text("Try another photo"),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.white,
+                    side: const BorderSide(color: Colors.white24),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ],
       ],
+    );
+  }
+
+  Widget _buildScanActionButton({
+    required String label,
+    required IconData icon,
+    required bool filled,
+    required VoidCallback? onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedOpacity(
+        duration: const Duration(milliseconds: 200),
+        opacity: onTap == null ? 0.6 : 1,
+        child: Container(
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            gradient: filled
+                ? const LinearGradient(
+                    colors: [Color(0xFF00D9FF), Color(0xFF0099FF)],
+                  )
+                : null,
+            color: filled ? null : Colors.white.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(20),
+            border: filled ? null : Border.all(color: Colors.white24),
+            boxShadow: filled
+                ? [
+                    BoxShadow(
+                      color: const Color(0xFF00D9FF).withValues(alpha: 0.5),
+                      blurRadius: 20,
+                      offset: const Offset(0, 8),
+                    ),
+                  ]
+                : null,
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, color: Colors.white, size: 24),
+              const SizedBox(width: 10),
+              Text(
+                label,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -326,16 +438,16 @@ class _MedicineScannerState extends State<MedicineScanner>
         const SizedBox(height: 16),
         Container(
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.1),
+            color: Colors.white,
             borderRadius: BorderRadius.circular(20),
             border: Border.all(color: Colors.white24),
           ),
           child: TextField(
             controller: medicineNameController,
-            style: const TextStyle(color: Colors.white, fontSize: 15),
+            style: const TextStyle(color: Colors.black87, fontSize: 15),
             decoration: const InputDecoration(
               hintText: "Enter medicine name (e.g., Paracetamol, Amoxicillin)...",
-              hintStyle: TextStyle(color: Colors.white54, fontSize: 14),
+              hintStyle: TextStyle(color: Colors.black45, fontSize: 14),
               prefixIcon: Icon(Icons.medication, color: Colors.cyan),
               border: InputBorder.none,
               contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
@@ -375,6 +487,21 @@ class _MedicineScannerState extends State<MedicineScanner>
           children: ["Paracetamol", "Ibuprofen", "Amoxicillin", "Vitamin C", "Aspirin", "Omeprazole"]
               .map(_buildQuickChip)
               .toList(),
+        ),
+        const SizedBox(height: 16),
+        GlassCard(
+          child: Row(
+            children: const [
+              Icon(Icons.auto_awesome, color: Colors.amber, size: 22),
+              SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  "Advanced help: try brand names, generic names, or upload a blister-pack photo for AI-based identification.",
+                  style: TextStyle(color: Colors.white70, fontSize: 13, height: 1.5),
+                ),
+              ),
+            ],
+          ),
         ),
       ],
     );

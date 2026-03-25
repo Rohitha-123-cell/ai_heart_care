@@ -18,7 +18,8 @@ class GenderBloc extends Bloc<GenderEvent, GenderState> {
 
   /// Handles next button press
   void _onNextPressed(GenderNextPressed event, Emitter<GenderState> emit) {
-    if (state.selectedGender == null) {
+    final selectedGender = state.selectedGender;
+    if (selectedGender == null) {
       emit(const GenderValidationErrorState(
         errorMessage: 'Please select an option',
       ));
@@ -26,15 +27,21 @@ class GenderBloc extends Bloc<GenderEvent, GenderState> {
     }
 
     emit(GenderNavigationState(
-      gender: state.selectedGender!,
+      gender: selectedGender,
       destination: 'patient',
     ));
   }
 
   /// Handles back button press
   void _onBackPressed(GenderBackPressed event, Emitter<GenderState> emit) {
+    final selectedGender = state.selectedGender;
+    if (selectedGender == null) {
+      emit(const GenderInitialState());
+      return;
+    }
+
     emit(GenderNavigationState(
-      gender: state.selectedGender!,
+      gender: selectedGender,
       destination: 'health_input',
     ));
   }

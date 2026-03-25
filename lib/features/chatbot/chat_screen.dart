@@ -748,16 +748,25 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
       child: Row(
         children: [
           Expanded(
-            child: TextField(
-              controller: controller,
-              style: TextStyle(color: Colors.white, fontSize: width * 0.04),
-              decoration: InputDecoration(
-                hintText: isListening ? "Listening..." : "Ask about symptoms, medicines, health...",
-                hintStyle: TextStyle(color: isListening ? Colors.cyan : Colors.white54, fontSize: width * 0.035),
-                border: InputBorder.none,
-                contentPadding: EdgeInsets.symmetric(horizontal: width * 0.04),
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
               ),
-              onSubmitted: (text) => sendMessage(),
+              child: TextField(
+                controller: controller,
+                style: TextStyle(color: Colors.black87, fontSize: width * 0.04),
+                decoration: InputDecoration(
+                  hintText: isListening ? "Listening..." : "Ask about symptoms, medicines, health...",
+                  hintStyle: TextStyle(
+                    color: isListening ? Colors.cyan.shade700 : Colors.black45,
+                    fontSize: width * 0.035,
+                  ),
+                  border: InputBorder.none,
+                  contentPadding: EdgeInsets.symmetric(horizontal: width * 0.04),
+                ),
+                onSubmitted: (text) => sendMessage(),
+              ),
             ),
           ),
           const SizedBox(width: 8),

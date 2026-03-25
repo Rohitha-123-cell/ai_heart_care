@@ -40,7 +40,7 @@ class GenderNavigationState extends GenderState {
   const GenderNavigationState({
     required this.gender,
     required this.destination,
-  });
+  }) : super(selectedGender: gender);
 
   @override
   String toString() => 'GenderNavigationState(destination: $destination)';

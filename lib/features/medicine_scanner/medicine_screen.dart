@@ -444,10 +444,10 @@ class _MedicineScreenState extends State<MedicineScreen> with SingleTickerProvid
                           ),
                           child: TextField(
                             controller: medicineNameController,
-                            style: TextStyle(color: Colors.white, fontSize: width * 0.04),
+                            style: TextStyle(color: Colors.black87, fontSize: width * 0.04),
                             decoration: InputDecoration(
                               hintText: "Enter medicine name (e.g., Paracetamol, Amoxicillin)...",
-                              hintStyle: TextStyle(color: Colors.white54, fontSize: width * 0.035),
+                              hintStyle: TextStyle(color: Colors.black45, fontSize: width * 0.035),
                               prefixIcon: Icon(Icons.medication, color: Colors.cyan, size: width * 0.06),
                               border: InputBorder.none,
                               contentPadding: EdgeInsets.symmetric(

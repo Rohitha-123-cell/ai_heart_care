@@ -86,24 +86,26 @@ class _RegisterScreenState extends State<RegisterScreen> {
             child: Center(
               child: ConstrainedBox(
                 constraints: BoxConstraints(maxWidth: Responsive.maxContentWidth(context)),
-                child: Padding(
+                child: SingleChildScrollView(
                   padding: Responsive.pagePadding(context),
                   child: isDesktop
-                      ? Row(
-                          children: [
-                            Expanded(child: _buildIntro(context)),
-                            const SizedBox(width: 28),
-                            SizedBox(width: 470, child: _buildCard(context)),
-                          ],
-                        )
-                      : SingleChildScrollView(
-                          child: Column(
+                      ? ConstrainedBox(
+                          constraints: const BoxConstraints(minHeight: 640),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
-                              _buildIntro(context, compact: true),
-                              const SizedBox(height: 24),
-                              _buildCard(context),
+                              Expanded(child: _buildIntro(context)),
+                              const SizedBox(width: 28),
+                              SizedBox(width: 470, child: _buildCard(context)),
                             ],
                           ),
+                        )
+                      : Column(
+                          children: [
+                            _buildIntro(context, compact: true),
+                            const SizedBox(height: 24),
+                            _buildCard(context),
+                          ],
                         ),
                 ),
               ),

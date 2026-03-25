@@ -156,24 +156,26 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: Center(
                     child: ConstrainedBox(
                       constraints: BoxConstraints(maxWidth: Responsive.maxContentWidth(context)),
-                      child: Padding(
+                      child: SingleChildScrollView(
                         padding: Responsive.pagePadding(context),
                         child: isDesktop
-                            ? Row(
-                                children: [
-                                  Expanded(child: _buildShowcase(context)),
-                                  const SizedBox(width: 28),
-                                  SizedBox(width: 470, child: _buildFormCard(context)),
-                                ],
-                              )
-                            : SingleChildScrollView(
-                                child: Column(
+                            ? ConstrainedBox(
+                                constraints: const BoxConstraints(minHeight: 640),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.center,
                                   children: [
-                                    _buildShowcase(context, compact: true),
-                                    const SizedBox(height: 24),
-                                    _buildFormCard(context),
+                                    Expanded(child: _buildShowcase(context)),
+                                    const SizedBox(width: 28),
+                                    SizedBox(width: 470, child: _buildFormCard(context)),
                                   ],
                                 ),
+                              )
+                            : Column(
+                                children: [
+                                  _buildShowcase(context, compact: true),
+                                  const SizedBox(height: 24),
+                                  _buildFormCard(context),
+                                ],
                               ),
                       ),
                     ),
