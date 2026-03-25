@@ -1,12 +1,12 @@
 {
-    "name": "ai_health_guardian",
-    "short_name": "ai_health_guardian",
+    "name": "AI Health Guardian",
+    "short_name": "Health AI",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
-    "orientation": "portrait-primary",
+    "background_color": "#0F766E",
+    "theme_color": "#0F766E",
+    "description": "Responsive AI-powered health monitoring for heart risk, BMI, stress detection, reports, and wellness insights.",
+    "orientation": "any",
     "prefer_related_applications": false,
     "icons": [
         {

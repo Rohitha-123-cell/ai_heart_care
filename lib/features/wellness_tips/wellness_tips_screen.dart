@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../step_counter/step_counter_screen.dart';
+import '../../core/utils/responsive.dart';
 
 class WellnessTipsScreen extends StatefulWidget {
   const WellnessTipsScreen({super.key});
@@ -158,7 +159,8 @@ class _WellnessTipsScreenState extends State<WellnessTipsScreen> with SingleTick
 
   @override
   Widget build(BuildContext context) {
-    double width = MediaQuery.of(context).size.width;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final width = screenWidth.clamp(0.0, 520.0).toDouble();
     double height = MediaQuery.of(context).size.height;
 
     return Scaffold(
@@ -175,8 +177,11 @@ class _WellnessTipsScreenState extends State<WellnessTipsScreen> with SingleTick
           ),
         ),
         child: SafeArea(
-          child: Column(
-            children: [
+          child: Center(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: Responsive.maxContentWidth(context)),
+              child: Column(
+                children: [
               // Beautiful Header
               FadeTransition(
                 opacity: _fadeAnimation,
@@ -215,12 +220,15 @@ class _WellnessTipsScreenState extends State<WellnessTipsScreen> with SingleTick
                                       child: Icon(Icons.auto_awesome, color: Colors.white, size: 20),
                                     ),
                                     SizedBox(width: 12),
-                                    const Text(
-                                      'Wellness Tips',
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 24,
-                                        fontWeight: FontWeight.bold,
+                                    Expanded(
+                                      child: Text(
+                                        'Wellness Tips',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: width * 0.05,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
                                       ),
                                     ),
                                   ],
@@ -398,7 +406,9 @@ class _WellnessTipsScreenState extends State<WellnessTipsScreen> with SingleTick
                   ),
                 ),
               ),
-            ],
+                ],
+              ),
+            ),
           ),
         ),
       ),
@@ -423,9 +433,10 @@ class _WellnessTipsScreenState extends State<WellnessTipsScreen> with SingleTick
   Widget _buildTipCard(Map<String, dynamic> tip, double width, int index) {
     final colors = tip['gradient'] as List<Color>;
     final color = tip['color'] as Color;
+    final isSelected = identical(tips[_selectedIndex], tip);
     
     return GestureDetector(
-      onTap: () => setState(() => _selectedIndex = index),
+      onTap: () => setState(() => _selectedIndex = tips.indexOf(tip)),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 300),
         margin: EdgeInsets.only(bottom: width * 0.04),
@@ -440,17 +451,17 @@ class _WellnessTipsScreenState extends State<WellnessTipsScreen> with SingleTick
           ),
           borderRadius: BorderRadius.circular(25),
           border: Border.all(
-            color: _selectedIndex == index 
+            color: isSelected
                 ? color.withOpacity(0.8) 
                 : Colors.white24,
-            width: _selectedIndex == index ? 2 : 1,
+            width: isSelected ? 2 : 1,
           ),
           boxShadow: [
             BoxShadow(
-              color: _selectedIndex == index 
+              color: isSelected
                   ? color.withOpacity(0.3) 
                   : Colors.black.withOpacity(0.1),
-              blurRadius: _selectedIndex == index ? 20 : 10,
+              blurRadius: isSelected ? 20 : 10,
               offset: const Offset(0, 6),
             ),
           ],
@@ -531,14 +542,14 @@ class _WellnessTipsScreenState extends State<WellnessTipsScreen> with SingleTick
                   Container(
                     padding: EdgeInsets.all(width * 0.02),
                     decoration: BoxDecoration(
-                      color: _selectedIndex == index 
+                      color: isSelected
                           ? Colors.green.withOpacity(0.3) 
                           : Colors.white.withOpacity(0.1),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
-                      _selectedIndex == index ? Icons.check : Icons.fiber_manual_record,
-                      color: _selectedIndex == index ? Colors.green : Colors.white38,
+                      isSelected ? Icons.check : Icons.fiber_manual_record,
+                      color: isSelected ? Colors.green : Colors.white38,
                       size: 12,
                     ),
                   ),

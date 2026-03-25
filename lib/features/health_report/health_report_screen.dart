@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../services/report_generator_service.dart';
 import '../../services/health_data_provider.dart';
+import '../../core/utils/responsive.dart';
 class HealthReportScreen extends StatefulWidget {
   const HealthReportScreen({super.key});
   @override
@@ -79,7 +80,8 @@ class _HealthReportScreenState extends State<HealthReportScreen> with SingleTick
 
   @override
   Widget build(BuildContext context) {
-    double width = MediaQuery.of(context).size.width;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final width = screenWidth.clamp(0.0, 520.0).toDouble();
 
     return Scaffold(
       body: Container(
@@ -95,7 +97,10 @@ class _HealthReportScreenState extends State<HealthReportScreen> with SingleTick
           ),
         ),
         child: SafeArea(
-          child: Column(
+          child: Center(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: Responsive.maxContentWidth(context)),
+              child: Column(
             children: [
               _buildAppBar(width),
               Expanded(
@@ -120,6 +125,8 @@ class _HealthReportScreenState extends State<HealthReportScreen> with SingleTick
                 ),
               ),
             ],
+              ),
+            ),
           ),
         ),
       ),
@@ -712,7 +719,7 @@ class _HealthReportScreenState extends State<HealthReportScreen> with SingleTick
   }
 
   Widget _buildMetricCard(String label, String value, Color color, IconData icon) {
-    double width = MediaQuery.of(context).size.width;
+    final width = MediaQuery.of(context).size.width.clamp(0.0, 520.0).toDouble();
     return Container(
       padding: EdgeInsets.all(width * 0.03),
       decoration: BoxDecoration(

@@ -5,6 +5,7 @@ import '../../bloc/patient/patient_event.dart';
 import '../../bloc/patient/patient_state.dart';
 import '../../models/question.dart';
 import '../../services/health_data_provider.dart';
+import '../../core/utils/responsive.dart';
 import '../dashboard/dashboard_screen.dart';
 import 'widgets/question_widget.dart';
 
@@ -57,7 +58,6 @@ class _PatientScreenContent extends StatelessWidget {
               SnackBar(
                 content: Text(state.errorMessage),
                 backgroundColor: Colors.orange,
-                behavior: SnackBarBehavior.floating,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
@@ -79,8 +79,11 @@ class _PatientScreenContent extends StatelessWidget {
 
         },
         builder: (context, state) {
-          return Column(
-            children: [
+          return Center(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: Responsive.maxContentWidth(context)),
+              child: Column(
+                children: [
               // Progress indicator section
               _buildProgressSection(state),
               
@@ -119,7 +122,9 @@ class _PatientScreenContent extends StatelessWidget {
                   },
                 ),
               ),
-            ],
+                ],
+              ),
+            ),
           );
         },
       ),
@@ -143,8 +148,18 @@ class _PatientScreenContent extends StatelessWidget {
                 ),
               ],
             ),
-            child: Row(
-              children: [
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final maxWidth = Responsive.maxContentWidth(context);
+                final contentWidth = constraints.maxWidth < maxWidth
+                    ? constraints.maxWidth
+                    : maxWidth;
+                return Align(
+                  alignment: Alignment.center,
+                  child: SizedBox(
+                    width: contentWidth,
+                    child: Row(
+                      children: [
                 // Back button
                 if (state.canGoPrevious)
                   Expanded(
@@ -211,9 +226,13 @@ class _PatientScreenContent extends StatelessWidget {
                       ),
                       elevation: 2,
                     ),
+                    ),
                   ),
-                ),
-              ],
+                      ],
+                    ),
+                  ),
+                );
+              },
             ),
           );
         },

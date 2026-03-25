@@ -1,17 +1,17 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:supabase_flutter/supabase_flutter.dart' show User;
-import '../../core/constants/colors.dart';
-import '../../core/widgets/glass_card.dart';
-import '../../widgets/custom_button.dart';
-import '../../widgets/custom_textfield.dart';
 import '../../bloc/auth/auth_bloc.dart';
 import '../../bloc/auth/auth_event.dart';
 import '../../bloc/auth/auth_state.dart';
+import '../../core/utils/responsive.dart';
+import '../../core/widgets/glass_card.dart';
 import '../../services/fingerprint_service.dart';
-import '../health_input/health_input_screen.dart';
+import '../../widgets/custom_button.dart';
+import '../../widgets/custom_textfield.dart';
 import '../dashboard/dashboard_screen.dart';
+import '../health_input/health_input_screen.dart';
 import 'register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -25,7 +25,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
   final FingerprintService _fingerprintService = FingerprintService();
-  
+
   bool _isFingerprintAvailable = false;
   bool _isCheckingBiometrics = true;
 
@@ -36,26 +36,24 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _checkBiometricAvailability() async {
+    if (kIsWeb) {
+      setState(() {
+        _isFingerprintAvailable = false;
+        _isCheckingBiometrics = false;
+      });
+      return;
+    }
+
     try {
       final isSupported = await _fingerprintService.isDeviceSupported();
       final canCheck = await _fingerprintService.canCheckBiometrics();
       final hasFingerprint = await _fingerprintService.hasFingerprintSensor();
-      
+
       setState(() {
         _isFingerprintAvailable = isSupported && (canCheck || hasFingerprint);
         _isCheckingBiometrics = false;
       });
-      
-      // Auto-prompt for fingerprint if available
-      if (_isFingerprintAvailable) {
-        // Small delay to let the UI build first
-        Future.delayed(const Duration(milliseconds: 500), () {
-          if (mounted) {
-            _authenticateWithFingerprint();
-          }
-        });
-      }
-    } catch (e) {
+    } catch (_) {
       setState(() {
         _isFingerprintAvailable = false;
         _isCheckingBiometrics = false;
@@ -64,50 +62,45 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _authenticateWithFingerprint() async {
-    if (_isCheckingBiometrics) return;
-    
+    if (_isCheckingBiometrics || kIsWeb) return;
+
     final biometricType = await _fingerprintService.getBiometricTypeDescription();
-    
+
     try {
       final success = await _fingerprintService.authenticate(
         reason: 'Authenticate with $biometricType to login',
       );
-      
-      if (success && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("Fingerprint verified! Please enter your credentials."),
-            backgroundColor: Colors.green,
-            duration: const Duration(seconds: 2),
-          ),
-        );
-        
-        FocusScope.of(context).unfocus();
-      }
-    } catch (e) {
-      debugPrint('Fingerprint authentication failed: $e');
-    }
+
+      if (!success || !mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Biometric check completed. Enter your credentials to continue."),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (_) {}
   }
 
   void login() {
-    if (emailController.text.trim().isEmpty || 
-        passwordController.text.trim().isEmpty) {
+    if (emailController.text.trim().isEmpty || passwordController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Please fill all fields")),
       );
       return;
     }
 
-    context.read<AuthBloc>().add(AuthLoginRequested(
-      email: emailController.text.trim(),
-      password: passwordController.text.trim(),
-    ));
+    context.read<AuthBloc>().add(
+          AuthLoginRequested(
+            email: emailController.text.trim(),
+            password: passwordController.text.trim(),
+          ),
+        );
   }
 
   @override
   Widget build(BuildContext context) {
-    double width = MediaQuery.of(context).size.width;
-    double height = MediaQuery.of(context).size.height;
+    final isDesktop = Responsive.isDesktop(context);
 
     return BlocListener<AuthBloc, AppAuthState>(
       listener: (context, state) {
@@ -123,276 +116,251 @@ class _LoginScreenState extends State<LoginScreen> {
           );
         } else if (state.status == AppAuthStatus.error) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("Login Failed: ${state.errorMessage}")),
+            SnackBar(content: Text("Login failed: ${state.errorMessage}")),
           );
         }
       },
       child: Scaffold(
-        backgroundColor: AppColors.background,
         body: AnnotatedRegion<SystemUiOverlayStyle>(
-          value: SystemUiOverlayStyle(
+          value: const SystemUiOverlayStyle(
             statusBarColor: Colors.transparent,
-            statusBarIconBrightness: Brightness.dark,
-            systemNavigationBarColor: AppColors.background,
-            systemNavigationBarIconBrightness: Brightness.dark,
+            statusBarIconBrightness: Brightness.light,
+            systemNavigationBarColor: Color(0xFF0B3B3B),
+            systemNavigationBarIconBrightness: Brightness.light,
           ),
-          child: Stack(
-            children: [
-              Container(
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Color(0xFF667eea),
-                      Color(0xFF764ba2),
-                    ],
-                  ),
-                ),
+          child: Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Color(0xFF062C30),
+                  Color(0xFF0F766E),
+                  Color(0xFF14B8A6),
+                ],
               ),
-              
-              Positioned(
-                top: -width * 0.3,
-                right: -width * 0.2,
-                child: Container(
-                  width: width * 0.8,
-                  height: width * 0.8,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(width * 0.4),
-                    color: Colors.white.withOpacity(0.1),
-                  ),
+            ),
+            child: Stack(
+              children: [
+                Positioned(
+                  top: -100,
+                  left: -50,
+                  child: _AuthOrb(size: 260, color: Colors.white.withValues(alpha: 0.08)),
                 ),
-              ),
-              Positioned(
-                bottom: -width * 0.3,
-                left: -width * 0.2,
-                child: Container(
-                  width: width * 0.8,
-                  height: width * 0.8,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(width * 0.4),
-                    color: Colors.white.withOpacity(0.1),
-                  ),
+                Positioned(
+                  bottom: -120,
+                  right: -60,
+                  child: _AuthOrb(size: 340, color: Colors.white.withValues(alpha: 0.08)),
                 ),
-              ),
-
-              SingleChildScrollView(
-                padding: EdgeInsets.only(
-                  top: height * 0.1,
-                  bottom: height * 0.05,
-                  left: width * 0.08,
-                  right: width * 0.08,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: EdgeInsets.all(width * 0.03),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(width * 0.05),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.2),
-                                blurRadius: 10,
-                                offset: const Offset(0, 4),
-                              )
-                            ],
-                          ),
-                          child: Icon(
-                            Icons.health_and_safety,
-                            size: width * 0.15,
-                            color: Colors.white,
-                          ),
-                        ),
-                        SizedBox(width: width * 0.04),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              "AI Health",
-                              style: TextStyle(
-                                fontSize: width * 0.06,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                                shadows: [
-                                  Shadow(
-                                    color: Colors.black.withOpacity(0.3),
-                                    blurRadius: 4,
-                                    offset: const Offset(2, 2),
-                                  )
-                                ],
-                              ),
-                            ),
-                            Text(
-                              "Guardian",
-                              style: TextStyle(
-                                fontSize: width * 0.04,
-                                color: Colors.white.withOpacity(0.9),
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-
-                    SizedBox(height: height * 0.08),
-
-                    Text(
-                      "Welcome Back",
-                      style: TextStyle(
-                        fontSize: width * 0.08,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                        letterSpacing: 1.0,
-                      ),
-                    ),
-
-                    SizedBox(height: height * 0.02),
-
-                    Text(
-                      "Sign in to your account to continue",
-                      style: TextStyle(
-                        fontSize: width * 0.035,
-                        color: Colors.white.withOpacity(0.8),
-                      ),
-                    ),
-
-                    SizedBox(height: height * 0.06),
-
-                    GlassCard(
+                SafeArea(
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(maxWidth: Responsive.maxContentWidth(context)),
                       child: Padding(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: width * 0.06,
-                          vertical: height * 0.04,
-                        ),
-                        child: Column(
-                          children: [
-                            CustomTextField(
-                              hint: "Email Address",
-                              controller: emailController,
-                              icon: Icons.email,
-                            ),
-
-                            SizedBox(height: height * 0.025),
-
-                            CustomTextField(
-                              hint: "Password",
-                              controller: passwordController,
-                              isPassword: true,
-                              icon: Icons.lock,
-                            ),
-
-                            SizedBox(height: height * 0.02),
-
-                            if (!_isCheckingBiometrics && _isFingerprintAvailable) ...[
-                              GestureDetector(
-                                onTap: _authenticateWithFingerprint,
-                                child: Container(
-                                  padding: EdgeInsets.symmetric(
-                                    horizontal: width * 0.04,
-                                    vertical: height * 0.015,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.1),
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(
-                                      color: Colors.white.withOpacity(0.2),
-                                    ),
-                                  ),
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Icon(
-                                        Icons.fingerprint,
-                                        color: Colors.white,
-                                        size: width * 0.06,
-                                      ),
-                                      SizedBox(width: width * 0.02),
-                                      Text(
-                                        "Use Fingerprint",
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontSize: width * 0.035,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
+                        padding: Responsive.pagePadding(context),
+                        child: isDesktop
+                            ? Row(
+                                children: [
+                                  Expanded(child: _buildShowcase(context)),
+                                  const SizedBox(width: 28),
+                                  SizedBox(width: 470, child: _buildFormCard(context)),
+                                ],
+                              )
+                            : SingleChildScrollView(
+                                child: Column(
+                                  children: [
+                                    _buildShowcase(context, compact: true),
+                                    const SizedBox(height: 24),
+                                    _buildFormCard(context),
+                                  ],
                                 ),
                               ),
-                              SizedBox(height: height * 0.02),
-                              Text(
-                                "or",
-                                style: TextStyle(
-                                  color: Colors.white54,
-                                  fontSize: width * 0.03,
-                                ),
-                              ),
-                              SizedBox(height: height * 0.02),
-                            ],
-
-                            BlocBuilder<AuthBloc, AppAuthState>(
-                              builder: (context, state) {
-                                return CustomButton(
-                                  text: state.status == AppAuthStatus.loading 
-                                      ? "Signing In..." 
-                                      : "Sign In",
-                                  onTap: state.status == AppAuthStatus.loading 
-                                      ? () {} 
-                                      : login,
-                                  isLoading: state.status == AppAuthStatus.loading,
-                                );
-                              },
-                            ),
-
-                            SizedBox(height: height * 0.03),
-
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(
-                                  "Don't have an account? ",
-                                  style: TextStyle(
-                                    fontSize: width * 0.035,
-                                    color: Colors.white70,
-                                  ),
-                                ),
-                                GestureDetector(
-                                  onTap: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) => const RegisterScreen(),
-                                      ),
-                                    );
-                                  },
-                                  child: Text(
-                                    "Sign Up",
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: width * 0.035,
-                                      fontWeight: FontWeight.bold,
-                                      decoration: TextDecoration.underline,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
                       ),
                     ),
-                  ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildShowcase(BuildContext context, {bool compact = false}) {
+    final theme = Theme.of(context).textTheme;
+
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: compact ? CrossAxisAlignment.center : CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(999),
+          ),
+          child: const Text(
+            "Built for mobile and web",
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
+          ),
+        ),
+        const SizedBox(height: 20),
+        Text(
+          "Health insights in a cleaner, more responsive workspace.",
+          textAlign: compact ? TextAlign.center : TextAlign.left,
+          style: theme.displayMedium?.copyWith(
+            color: Colors.white,
+            fontSize: compact ? 34 : 46,
+          ),
+        ),
+        const SizedBox(height: 14),
+        Text(
+          "Sign in to access reports, AI support, risk prediction, activity tracking, and your personalized dashboard.",
+          textAlign: compact ? TextAlign.center : TextAlign.left,
+          style: theme.bodyLarge?.copyWith(color: Colors.white.withValues(alpha: 0.82)),
+        ),
+        const SizedBox(height: 24),
+        Wrap(
+          alignment: compact ? WrapAlignment.center : WrapAlignment.start,
+          spacing: 12,
+          runSpacing: 12,
+          children: const [
+            _InfoPill(icon: Icons.monitor_heart_outlined, label: "Real-time summaries"),
+            _InfoPill(icon: Icons.psychology_alt_outlined, label: "AI-assisted guidance"),
+            _InfoPill(icon: Icons.description_outlined, label: "Health reports"),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFormCard(BuildContext context) {
+    return GlassCard(
+      padding: const EdgeInsets.all(28),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            "Welcome back",
+            style: TextStyle(fontSize: 32, fontWeight: FontWeight.w700, color: Colors.white),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            "Sign in to continue your health journey.",
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Colors.white.withValues(alpha: 0.8),
+                ),
+          ),
+          const SizedBox(height: 24),
+          CustomTextField(
+            hint: "Email address",
+            controller: emailController,
+            icon: Icons.mail_outline_rounded,
+          ),
+          const SizedBox(height: 16),
+          CustomTextField(
+            hint: "Password",
+            controller: passwordController,
+            isPassword: true,
+            icon: Icons.lock_outline_rounded,
+          ),
+          if (!kIsWeb && !_isCheckingBiometrics && _isFingerprintAvailable) ...[
+            const SizedBox(height: 16),
+            OutlinedButton.icon(
+              onPressed: _authenticateWithFingerprint,
+              icon: const Icon(Icons.fingerprint),
+              label: const Text("Use biometrics"),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.white,
+                side: BorderSide(color: Colors.white.withValues(alpha: 0.28)),
+                minimumSize: const Size.fromHeight(54),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+              ),
+            ),
+          ],
+          const SizedBox(height: 18),
+          BlocBuilder<AuthBloc, AppAuthState>(
+            builder: (context, state) {
+              return CustomButton(
+                text: state.status == AppAuthStatus.loading ? "Signing in..." : "Sign In",
+                onTap: state.status == AppAuthStatus.loading ? () {} : login,
+                isLoading: state.status == AppAuthStatus.loading,
+              );
+            },
+          ),
+          const SizedBox(height: 20),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                "New here? ",
+                style: TextStyle(color: Colors.white.withValues(alpha: 0.72)),
+              ),
+              GestureDetector(
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const RegisterScreen()),
+                ),
+                child: const Text(
+                  "Create account",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                    decoration: TextDecoration.underline,
+                  ),
                 ),
               ),
             ],
           ),
-        ),
+        ],
       ),
+    );
+  }
+}
+
+class _InfoPill extends StatelessWidget {
+  final IconData icon;
+  final String label;
+
+  const _InfoPill({required this.icon, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: Colors.white, size: 18),
+          const SizedBox(width: 8),
+          Text(
+            label,
+            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AuthOrb extends StatelessWidget {
+  final double size;
+  final Color color;
+
+  const _AuthOrb({required this.size, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
     );
   }
 }

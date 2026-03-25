@@ -3,6 +3,7 @@ import 'dart:async';
 import '../../services/stress_service.dart';
 import '../../services/heart_rate_service.dart';
 import '../../services/fingerprint_service.dart';
+import '../../core/utils/responsive.dart';
 
 class StressDetectionScreen extends StatefulWidget {
   const StressDetectionScreen({super.key});
@@ -417,7 +418,8 @@ class _StressDetectionScreenState extends State<StressDetectionScreen>
 
   @override
   Widget build(BuildContext context) {
-    double width = MediaQuery.of(context).size.width;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final width = screenWidth.clamp(0.0, 520.0).toDouble();
 
     return Scaffold(
       body: Container(
@@ -433,7 +435,10 @@ class _StressDetectionScreenState extends State<StressDetectionScreen>
           ),
         ),
         child: SafeArea(
-          child: Column(
+          child: Center(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: Responsive.maxContentWidth(context)),
+              child: Column(
             children: [
               _buildAppBar(width),
               Expanded(
@@ -457,6 +462,8 @@ class _StressDetectionScreenState extends State<StressDetectionScreen>
                 ),
               ),
             ],
+              ),
+            ),
           ),
         ),
       ),

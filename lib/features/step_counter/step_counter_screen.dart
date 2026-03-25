@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import '../../services/step_counter_service.dart';
+import '../../core/utils/responsive.dart';
 
 class StepCounterScreen extends StatefulWidget {
   const StepCounterScreen({super.key});
@@ -130,7 +131,8 @@ class _StepCounterScreenState extends State<StepCounterScreen>
 
   @override
   Widget build(BuildContext context) {
-    double width = MediaQuery.of(context).size.width;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final width = screenWidth.clamp(0.0, 520.0).toDouble();
 
     return Scaffold(
       body: Container(
@@ -146,7 +148,10 @@ class _StepCounterScreenState extends State<StepCounterScreen>
           ),
         ),
         child: SafeArea(
-          child: Column(
+          child: Center(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: Responsive.maxContentWidth(context)),
+              child: Column(
             children: [
               _buildAppBar(width),
               Expanded(
@@ -182,6 +187,8 @@ class _StepCounterScreenState extends State<StepCounterScreen>
                 ),
               ),
             ],
+              ),
+            ),
           ),
         ),
       ),

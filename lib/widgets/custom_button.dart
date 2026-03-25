@@ -21,60 +21,71 @@ class CustomButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    double width = MediaQuery.of(context).size.width;
+    final colors = isLoading
+        ? [Colors.grey.shade400, Colors.grey.shade500]
+        : [
+            backgroundColor ?? AppColors.primary,
+            (backgroundColor ?? AppColors.primary).withValues(alpha: 0.88),
+          ];
 
-    return GestureDetector(
-      onTap: isLoading ? null : onTap,
-      child: Container(
-        width: double.infinity,
-        height: height ?? width * 0.14,
-        decoration: BoxDecoration(
-          color: isLoading 
-            ? Colors.grey[400]
-            : backgroundColor ?? AppColors.primary,
-          borderRadius: BorderRadius.circular(width * 0.03),
-          boxShadow: !isLoading
-            ? [
-                BoxShadow(
-                  color: AppColors.primary.withOpacity(0.3),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                )
-              ]
-            : [],
-        ),
-        child: Center(
-          child: isLoading
-            ? Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  SizedBox(
-                    width: width * 0.06,
-                    height: width * 0.06,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 3,
-                      color: Colors.white,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: isLoading ? null : onTap,
+        borderRadius: BorderRadius.circular(18),
+        child: Ink(
+          width: double.infinity,
+          height: height ?? 56,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: colors,
+            ),
+            borderRadius: BorderRadius.circular(18),
+            boxShadow: !isLoading
+                ? [
+                    BoxShadow(
+                      color: colors.first.withValues(alpha: 0.28),
+                      blurRadius: 18,
+                      offset: const Offset(0, 10),
                     ),
-                  ),
-                  SizedBox(width: width * 0.03),
-                  Text(
+                  ]
+                : [],
+          ),
+          child: Center(
+            child: isLoading
+                ? Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.5,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        text,
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: textColor ?? Colors.white,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  )
+                : Text(
                     text,
                     style: TextStyle(
-                      fontSize: width * 0.045,
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      color: textColor ?? Colors.white,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
-                ],
-              )
-            : Text(
-                text,
-                style: TextStyle(
-                  fontSize: width * 0.045,
-                  color: textColor ?? Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+          ),
         ),
       ),
     );

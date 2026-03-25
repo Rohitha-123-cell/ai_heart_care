@@ -36,6 +36,7 @@ class RadioOptionWidget extends StatelessWidget {
           ),
         ),
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Custom radio button
             Container(
@@ -59,12 +60,15 @@ class RadioOptionWidget extends StatelessWidget {
             ),
             const SizedBox(width: 12),
             // Option text
-            Text(
-              option,
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                color: isSelected ? _primaryColor : Colors.grey.shade800,
+            Expanded(
+              child: Text(
+                option,
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                  color: isSelected ? _primaryColor : Colors.grey.shade800,
+                ),
+                softWrap: true,
               ),
             ),
           ],

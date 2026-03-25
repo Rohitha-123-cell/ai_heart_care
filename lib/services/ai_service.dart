@@ -1,23 +1,22 @@
 import 'dart:convert';
-import 'dart:io';
+import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 
 class AIService {
   final String apiKey = "AIzaSyAGEgzDDbUHtvJAOdOUqmPJADU-7N995_Y";
 
-  Future<String> _sendRequest(String prompt, {File? image}) async {
+  Future<String> _sendRequest(String prompt, {Uint8List? imageBytes}) async {
     try {
       final url = Uri.parse(
           "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=$apiKey");
 
       List<Map<String, dynamic>> parts = [{"text": prompt}];
 
-      if (image != null) {
-        final bytes = await image.readAsBytes();
+      if (imageBytes != null) {
         parts.add({
           "inline_data": {
             "mime_type": "image/jpeg",
-            "data": base64Encode(bytes),
+            "data": base64Encode(imageBytes),
           }
         });
       }
@@ -85,9 +84,34 @@ class AIService {
   Future<String> getMedicineInfo(String medicine) =>
       _sendRequest("You are a friendly medical assistant. For the medicine '$medicine':\n\n1. **What is it?** - Give a simple 1-line explanation of what this medicine is (e.g., 'This is a common pain reliever' or 'This is an antibiotic for infections')\n\n2. **What is it used for?** - Explain in simple terms what this medicine helps with (e.g., 'Used to treat headaches, fever, and mild pain' or 'Helps fight bacterial infections')\n\n3. **How to take it** - Simple dosage instructions if available\n\n4. **Important things to know** - Any key warnings in plain language\n\nKeep it simple and easy to understand, like explaining to a friend. Use bullet points. No disclaimer needed.");
 
-  // Skin Detection (REAL VISION AI now!)
-  Future<String> analyzeImage(File image) =>
+  // Skin Detection - accepts raw bytes (works on web + mobile)
+  Future<String> analyzeImage(Uint8List imageBytes) =>
       _sendRequest(
           "Analyze this skin photo. Detect issues like acne, eczema, rash, allergy. Give confidence % and brief advice in 2-3 sentences. No disclaimer needed.",
-          image: image);
+          imageBytes: imageBytes);
+
+  // Medicine identification from image bytes (works on web + mobile)
+  Future<String> getMedicineInfoFromImage(Uint8List imageBytes) =>
+      _sendRequest(
+          "Look at this medicine packaging image. Identify the medicine name, what it is used for, dosage instructions, and key warnings. Be simple and friendly. Use bullet points. No disclaimer needed.",
+          imageBytes: imageBytes);
+
+  Future<String> summarizeDiseaseTrend({
+    required String disease,
+    required String region,
+    required int latestCases,
+    required int peakCases,
+    required double averageCases,
+    required int abnormalDays,
+  }) =>
+      _sendRequest(
+        "You are a health data assistant. Summarize this local disease trend dashboard in 3 short bullet points for a college hackathon demo."
+        "\nDisease: $disease"
+        "\nRegion: $region"
+        "\nLatest cases: $latestCases"
+        "\nPeak cases: $peakCases"
+        "\nAverage cases: ${averageCases.toStringAsFixed(1)}"
+        "\nAbnormal high-trend days: $abnormalDays"
+        "\nFocus on trend direction, risk hotspots, and one practical awareness suggestion. No disclaimer needed.",
+      );
 }

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math';
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class StepCounterService {
@@ -27,7 +28,7 @@ class StepCounterService {
       _checkDayReset();
       _sessionStart = DateTime.now();
     } catch (e) {
-      print('Step counter initialization error: $e');
+      debugPrint('Step counter initialization error: $e');
     }
   }
 
@@ -43,9 +44,13 @@ class StepCounterService {
     }
   }
 
+  StreamController<int>? _streamController;
+
   /// Start step counting simulation
   Stream<int> startCounting() {
-    StreamController<int> controller = StreamController<int>();
+    _streamController?.close();
+    _streamController = StreamController<int>.broadcast();
+    StreamController<int> controller = _streamController!;
     Random random = Random();
     
     // Simulate ~100 steps per 10 minutes on average
@@ -82,6 +87,8 @@ class StepCounterService {
   /// Stop step counting
   void stopCounting() {
     _simulationTimer?.cancel();
+    _streamController?.close();
+    _streamController = null;
     _saveDailyProgress();
   }
 
@@ -171,7 +178,7 @@ class StepCounterService {
         'hourly_steps': _hourlySteps.join(','),
       });
     } catch (e) {
-      print('Error saving step data: $e');
+      debugPrint('Error saving step data: $e');
     }
   }
 
@@ -201,7 +208,7 @@ class StepCounterService {
       
       return weekSteps;
     } catch (e) {
-      print('Error fetching weekly steps: $e');
+      debugPrint('Error fetching weekly steps: $e');
       return List.filled(7, 0);
     }
   }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:math' as math;
 import '../../core/constants/colors.dart';
+import '../../core/utils/responsive.dart';
 import '../../core/widgets/glass_card.dart';
 import '../../services/auth_service.dart';
 import '../../services/health_data_service.dart';
@@ -11,6 +12,7 @@ import '../symptom_checker/symptom_checker_screen.dart';
 import '../heart_risk/heart_risk_screen.dart';
 import '../emergency/emergency_screen.dart';
 import '../camera/camera_screen.dart';
+import '../disease_trends/disease_trend_dashboard_screen.dart';
 import '../scanner/medicine_scanner.dart';
 import '../wellness_tips/wellness_tips_screen.dart';
 import '../ai_insight/ai_health_insight_screen.dart';
@@ -49,6 +51,7 @@ class _UserProfileScreenState extends State<UserProfileScreen>
     {'icon': Icons.psychology, 'title': 'AI Health Prediction', 'subtitle': 'ML-based disease risk analysis', 'color': Colors.indigo, 'screen': const HeartRiskScreen()},
     {'icon': Icons.emergency, 'title': 'Emergency AI Dispatch', 'subtitle': 'Auto-detect & alert nearest hospital', 'color': Colors.red, 'screen': const EmergencyScreen()},
     {'icon': Icons.coronavirus, 'title': 'Symptom Scanner', 'subtitle': 'AI-powered symptom analysis', 'color': Colors.teal, 'screen': const SymptomCheckerScreen()},
+    {'icon': Icons.query_stats, 'title': 'Disease Trend Dashboard', 'subtitle': 'Local outbreak analytics with AI summary', 'color': Colors.deepOrange, 'screen': const DiseaseTrendDashboardScreen()},
     {'icon': Icons.medication, 'title': 'Medicine Interaction', 'subtitle': 'Check drug compatibility', 'color': Colors.amber, 'screen': const MedicineScanner()},
     {'icon': Icons.timeline, 'title': 'Health Timeline', 'subtitle': 'Track your health journey', 'color': Colors.deepPurple, 'screen': const WellnessTipsScreen()},
   ];
@@ -159,7 +162,8 @@ class _UserProfileScreenState extends State<UserProfileScreen>
 
   @override
   Widget build(BuildContext context) {
-    double width = MediaQuery.of(context).size.width;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final width = screenWidth.clamp(0.0, 560.0).toDouble();
     double height = MediaQuery.of(context).size.height;
 
     return Scaffold(
@@ -213,8 +217,11 @@ class _UserProfileScreenState extends State<UserProfileScreen>
                   ? const Center(
                       child: CircularProgressIndicator(color: Colors.white),
                     )
-                  : SingleChildScrollView(
-                      child: Column(
+                  : Center(
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(maxWidth: Responsive.maxContentWidth(context)),
+                        child: SingleChildScrollView(
+                          child: Column(
                         children: [
                           // App Bar
                           _buildAppBar(width),
@@ -236,6 +243,8 @@ class _UserProfileScreenState extends State<UserProfileScreen>
 
                           SizedBox(height: height * 0.05),
                         ],
+                          ),
+                        ),
                       ),
                     ),
             ),
@@ -354,6 +363,7 @@ class _UserProfileScreenState extends State<UserProfileScreen>
   }
 
   Widget _buildSmartWatchRing(double width, double height) {
+    final isWideCard = MediaQuery.of(context).size.width >= 900;
     return Container(
       margin: EdgeInsets.all(width * 0.04),
       padding: EdgeInsets.all(width * 0.04),
@@ -405,8 +415,10 @@ class _UserProfileScreenState extends State<UserProfileScreen>
           SizedBox(height: height * 0.02),
 
           // Animated Circular Progress
-          Row(
+          Flex(
+            direction: isWideCard ? Axis.horizontal : Axis.vertical,
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               // Main score ring
               _buildCircularRing(
@@ -436,7 +448,12 @@ class _UserProfileScreenState extends State<UserProfileScreen>
               ),
 
               // Mini stats
-              Column(
+              Padding(
+                padding: EdgeInsets.only(
+                  top: isWideCard ? 0 : height * 0.02,
+                  left: isWideCard ? width * 0.04 : 0,
+                ),
+                child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   _buildMiniStat("BMI", _bmi.toStringAsFixed(1), Colors.blue),
@@ -445,6 +462,7 @@ class _UserProfileScreenState extends State<UserProfileScreen>
                   SizedBox(height: height * 0.01),
                   _buildMiniStat("Steps", _steps.toString(), Colors.green),
                 ],
+              ),
               ),
             ],
           ),
@@ -527,6 +545,7 @@ class _UserProfileScreenState extends State<UserProfileScreen>
   }
 
   Widget _buildHealthMetrics(double width, double height) {
+    final columns = MediaQuery.of(context).size.width >= 1100 ? 3 : 2;
     return Container(
       margin: EdgeInsets.symmetric(horizontal: width * 0.04),
       child: Column(
@@ -545,10 +564,10 @@ class _UserProfileScreenState extends State<UserProfileScreen>
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 3,
+              crossAxisCount: columns,
               crossAxisSpacing: width * 0.025,
               mainAxisSpacing: width * 0.025,
-              childAspectRatio: 0.9,
+              childAspectRatio: columns == 3 ? 0.9 : 1.15,
             ),
             itemCount: _healthMetrics.length,
             itemBuilder: (context, index) {

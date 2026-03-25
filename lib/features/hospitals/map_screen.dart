@@ -20,11 +20,33 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   Future<void> getLocation() async {
-    Position position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
-    setState(() {
-      currentLocation = LatLng(position.latitude, position.longitude);
-      isLoading = false;
-    });
+    try {
+      // Request permission first
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+
+      if (permission == LocationPermission.deniedForever ||
+          permission == LocationPermission.denied) {
+        // Use default location (Hyderabad) if permission denied
+        setState(() => isLoading = false);
+        return;
+      }
+
+      final position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      ).timeout(const Duration(seconds: 10));
+
+      setState(() {
+        currentLocation = LatLng(position.latitude, position.longitude);
+        isLoading = false;
+      });
+    } catch (e) {
+      // Fall back to default location on any error
+      debugPrint('Location error: $e');
+      setState(() => isLoading = false);
+    }
   }
 
   @override

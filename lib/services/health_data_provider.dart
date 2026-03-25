@@ -51,50 +51,32 @@ class HealthDataProvider extends ChangeNotifier {
     return _todayKey == today;
   }
   
-  // Update historical data with current values
+  // Update historical data: appends a new entry on a new day,
+  // or updates today's last entry for same-day calls.
   void _updateDailyData() {
     final today = DateTime.now().toString().substring(0, 10);
-    
-    // Only update once per day
+
     if (_todayKey != today) {
-      // Add current values to history (remove oldest if more than 7 days)
-      if (_heartRiskHistory.length >= 7) {
-        _heartRiskHistory.removeAt(0);
-      }
+      // New day — append entries, keep max 7 days
+      if (_heartRiskHistory.length >= 7) _heartRiskHistory.removeAt(0);
       _heartRiskHistory.add(_heartRisk);
-      
-      if (_bmiHistory.length >= 7) {
-        _bmiHistory.removeAt(0);
-      }
+
+      if (_bmiHistory.length >= 7) _bmiHistory.removeAt(0);
       _bmiHistory.add(_bmi);
-      
-      if (_stepsHistory.length >= 7) {
-        _stepsHistory.removeAt(0);
-      }
+
+      if (_stepsHistory.length >= 7) _stepsHistory.removeAt(0);
       _stepsHistory.add(_steps);
-      
-      if (_sleepHistory.length >= 7) {
-        _sleepHistory.removeAt(0);
-      }
+
+      if (_sleepHistory.length >= 7) _sleepHistory.removeAt(0);
       _sleepHistory.add(_sleepHours);
-      
+
       _todayKey = today;
-    }
-  }
-  
-  // Update today's data without creating new entry (for same-day updates)
-  void _updateTodayData() {
-    if (_heartRiskHistory.isNotEmpty) {
-      _heartRiskHistory[_heartRiskHistory.length - 1] = _heartRisk;
-    }
-    if (_bmiHistory.isNotEmpty) {
-      _bmiHistory[_bmiHistory.length - 1] = _bmi;
-    }
-    if (_stepsHistory.isNotEmpty) {
-      _stepsHistory[_stepsHistory.length - 1] = _steps;
-    }
-    if (_sleepHistory.isNotEmpty) {
-      _sleepHistory[_sleepHistory.length - 1] = _sleepHours;
+    } else {
+      // Same day — update the most recent entry with current values
+      if (_heartRiskHistory.isNotEmpty) _heartRiskHistory[_heartRiskHistory.length - 1] = _heartRisk;
+      if (_bmiHistory.isNotEmpty) _bmiHistory[_bmiHistory.length - 1] = _bmi;
+      if (_stepsHistory.isNotEmpty) _stepsHistory[_stepsHistory.length - 1] = _steps;
+      if (_sleepHistory.isNotEmpty) _sleepHistory[_sleepHistory.length - 1] = _sleepHours;
     }
   }
   
@@ -122,9 +104,9 @@ class HealthDataProvider extends ChangeNotifier {
     if (stressScore != null) _stressScore = stressScore;
     if (bmiCategory != null) _bmiCategory = bmiCategory;
     
-    // Update today's historical data for real-time trends
-    _updateTodayData();
-    
+    // Append a new daily entry or update today's entry
+    _updateDailyData();
+
     notifyListeners();
   }
   

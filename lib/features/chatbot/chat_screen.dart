@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../services/ai_service.dart';
 import '../../services/voice_service.dart';
 import '../../core/widgets/glass_card.dart';
+import '../../core/utils/responsive.dart';
 
 class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key});
@@ -155,7 +156,8 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
 
-    double width = MediaQuery.of(context).size.width;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final width = screenWidth.clamp(0.0, 520.0).toDouble();
     double height = MediaQuery.of(context).size.height;
 
     return Scaffold(
@@ -172,7 +174,10 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
           ),
         ),
         child: SafeArea(
-          child: Column(
+          child: Center(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: Responsive.maxContentWidth(context)),
+              child: Column(
             children: [
               _buildAppBar(width),
               
@@ -207,6 +212,8 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
 
               _buildInputArea(width),
             ],
+              ),
+            ),
           ),
         ),
       ),

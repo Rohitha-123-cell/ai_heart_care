@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../bloc/bmi/bmi_bloc.dart';
 import '../../bloc/bmi/bmi_event.dart';
 import '../../bloc/bmi/bmi_state.dart';
+import '../../core/utils/responsive.dart';
 import '../../services/storage_service.dart';
 import '../../services/health_data_provider.dart';
 import '../dashboard/dashboard_screen.dart';
@@ -423,7 +424,8 @@ class _HealthInputScreenState extends State<HealthInputScreen> with TickerProvid
 
   @override
   Widget build(BuildContext context) {
-    double width = MediaQuery.of(context).size.width;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final width = screenWidth.clamp(0.0, 520.0).toDouble();
     double height = MediaQuery.of(context).size.height;
 
     return Scaffold(
@@ -440,9 +442,12 @@ class _HealthInputScreenState extends State<HealthInputScreen> with TickerProvid
           ),
         ),
         child: SafeArea(
-          child: SingleChildScrollView(
-            padding: EdgeInsets.all(width * 0.05),
-            child: Column(
+          child: Center(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: Responsive.maxContentWidth(context)),
+              child: SingleChildScrollView(
+                padding: EdgeInsets.all(width * 0.05),
+                child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Header
@@ -466,7 +471,7 @@ class _HealthInputScreenState extends State<HealthInputScreen> with TickerProvid
                       ),
                       SizedBox(height: height * 0.02),
                       const Text(
-                        "Welcome! 👋",
+                        "Welcome!",
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 28,
@@ -494,7 +499,7 @@ class _HealthInputScreenState extends State<HealthInputScreen> with TickerProvid
                     children: [
                       // BMI Input Card
                       _buildInputCard(
-                        title: "📊 BMI (Body Mass Index)",
+                        title: "BMI (Body Mass Index)",
                         icon: Icons.monitor_weight,
                         color: Colors.cyan,
                         child: Column(
@@ -665,8 +670,10 @@ class _HealthInputScreenState extends State<HealthInputScreen> with TickerProvid
                                       ),
                                     ),
                                     SizedBox(height: 4),
-                                    Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                                    Wrap(
+                                      alignment: WrapAlignment.spaceAround,
+                                      spacing: 8,
+                                      runSpacing: 8,
                                       children: [
                                         _buildBmiCategoryChip('Underweight', Colors.blue, '< 18.5'),
                                         _buildBmiCategoryChip('Normal', Colors.green, '18.5-24.9'),
@@ -686,7 +693,7 @@ class _HealthInputScreenState extends State<HealthInputScreen> with TickerProvid
 
                       // Heart Risk Input Card - Only show results when age is entered
                       _buildInputCard(
-                        title: "❤️ Heart Risk",
+                        title: "Heart Risk",
                         icon: Icons.favorite,
                         color: Colors.pink,
                         child: Column(
@@ -794,7 +801,7 @@ class _HealthInputScreenState extends State<HealthInputScreen> with TickerProvid
 
                       // Sleep Quantity Card
                       _buildInputCard(
-                        title: "😴 Sleep Quantity",
+                        title: "Sleep Quantity",
                         icon: Icons.bedtime,
                         color: Colors.purple,
                         child: _buildTextField(
@@ -810,7 +817,7 @@ class _HealthInputScreenState extends State<HealthInputScreen> with TickerProvid
 
                       // Daily Activity Card
                       _buildInputCard(
-                        title: "🏃 Daily Activity",
+                        title: "Daily Activity",
                         icon: Icons.directions_walk,
                         color: Colors.green,
                         child: _buildTextField(
@@ -826,7 +833,7 @@ class _HealthInputScreenState extends State<HealthInputScreen> with TickerProvid
 
                       // Heart Rate (Optional)
                       _buildInputCard(
-                        title: "💓 Heart Rate (Optional)",
+                        title: "Heart Rate (Optional)",
                         icon: Icons.monitor_heart,
                         color: Colors.red,
                         child: _buildTextField(
@@ -885,6 +892,8 @@ class _HealthInputScreenState extends State<HealthInputScreen> with TickerProvid
 
                 SizedBox(height: height * 0.03),
               ],
+                ),
+              ),
             ),
           ),
         ),
@@ -898,7 +907,7 @@ class _HealthInputScreenState extends State<HealthInputScreen> with TickerProvid
     required Color color,
     required Widget child,
   }) {
-    double width = MediaQuery.of(context).size.width;
+    final width = MediaQuery.of(context).size.width.clamp(0.0, 520.0).toDouble();
     return Container(
       padding: EdgeInsets.all(width * 0.04),
       decoration: BoxDecoration(
@@ -952,7 +961,7 @@ class _HealthInputScreenState extends State<HealthInputScreen> with TickerProvid
     TextInputType? keyboardType,
     Function(String)? onChanged,
   }) {
-    double width = MediaQuery.of(context).size.width;
+    final width = MediaQuery.of(context).size.width.clamp(0.0, 520.0).toDouble();
     return TextField(
       controller: controller,
       keyboardType: keyboardType,

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../services/heart_service.dart';
 import '../../services/health_data_provider.dart';
-import '../../core/widgets/glass_card.dart';
+import '../../core/utils/responsive.dart';
 import '../../widgets/health_charts.dart';
 
 class HeartRiskScreen extends StatefulWidget {
@@ -233,8 +233,8 @@ class _HeartRiskScreenState extends State<HeartRiskScreen> with TickerProviderSt
 
   @override
   Widget build(BuildContext context) {
-
-    double width = MediaQuery.of(context).size.width;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final width = screenWidth.clamp(0.0, 520.0).toDouble();
 
     return Scaffold(
       body: Container(
@@ -250,7 +250,10 @@ class _HeartRiskScreenState extends State<HeartRiskScreen> with TickerProviderSt
           ),
         ),
         child: SafeArea(
-          child: Column(
+          child: Center(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: Responsive.maxContentWidth(context)),
+              child: Column(
             children: [
               // Custom App Bar
               Container(
@@ -851,6 +854,8 @@ class _HeartRiskScreenState extends State<HeartRiskScreen> with TickerProviderSt
                 ),
               ),
             ],
+              ),
+            ),
           ),
         ),
       ),
@@ -877,7 +882,7 @@ class _HeartRiskScreenState extends State<HeartRiskScreen> with TickerProviderSt
   }
 
   Widget _buildRiskSwitch(String label, bool value, Function(bool) onChanged) {
-    double width = MediaQuery.of(context).size.width;
+    final width = MediaQuery.of(context).size.width.clamp(0.0, 520.0).toDouble();
     return Container(
       margin: EdgeInsets.only(bottom: width * 0.02),
       padding: EdgeInsets.symmetric(
@@ -912,7 +917,7 @@ class _HeartRiskScreenState extends State<HeartRiskScreen> with TickerProviderSt
   }
 
   Widget _buildBMIData(String label, String value, Color color) {
-    double width = MediaQuery.of(context).size.width;
+    final width = MediaQuery.of(context).size.width.clamp(0.0, 520.0).toDouble();
     return Column(
       children: [
         Text(
@@ -990,7 +995,7 @@ class _HeartRiskScreenState extends State<HeartRiskScreen> with TickerProviderSt
   }
 
   List<Widget> _buildRecommendations() {
-    double width = MediaQuery.of(context).size.width;
+    final width = MediaQuery.of(context).size.width.clamp(0.0, 520.0).toDouble();
     List<String> recommendations = [];
     
     if (smoker) {

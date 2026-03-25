@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../services/risk_prediction_service.dart';
 import '../../services/health_data_provider.dart';
+import '../../core/utils/responsive.dart';
 
 class RiskPredictionScreen extends StatefulWidget {
   const RiskPredictionScreen({super.key});
@@ -70,7 +71,8 @@ class _RiskPredictionScreenState extends State<RiskPredictionScreen> {
 
   @override
   Widget build(BuildContext context) {
-    double width = MediaQuery.of(context).size.width;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final width = screenWidth.clamp(0.0, 520.0).toDouble();
 
     return Scaffold(
       body: Container(
@@ -82,7 +84,10 @@ class _RiskPredictionScreenState extends State<RiskPredictionScreen> {
           ),
         ),
         child: SafeArea(
-          child: Column(
+          child: Center(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: Responsive.maxContentWidth(context)),
+              child: Column(
             children: [
               _buildAppBar(width),
               Expanded(
@@ -104,6 +109,8 @@ class _RiskPredictionScreenState extends State<RiskPredictionScreen> {
                 ),
               ),
             ],
+              ),
+            ),
           ),
         ),
       ),

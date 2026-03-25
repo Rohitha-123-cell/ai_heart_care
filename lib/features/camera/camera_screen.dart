@@ -1,8 +1,8 @@
-import 'dart:io';
+import 'dart:typed_data';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../services/ai_service.dart';
-import '../dashboard/widgets/glass_card.dart';
 
 class CameraScreen extends StatefulWidget {
   const CameraScreen({super.key});
@@ -10,12 +10,13 @@ class CameraScreen extends StatefulWidget {
   State<CameraScreen> createState() => _CameraScreenState();
 }
 
-class _CameraScreenState extends State<CameraScreen> with SingleTickerProviderStateMixin {
-  File? image;
+class _CameraScreenState extends State<CameraScreen>
+    with SingleTickerProviderStateMixin {
+  Uint8List? imageBytes;
   String result = "";
   bool isLoading = false;
   final picker = ImagePicker();
-  
+
   late AnimationController _animationController;
   late Animation<double> _pulseAnimation;
 
@@ -26,7 +27,6 @@ class _CameraScreenState extends State<CameraScreen> with SingleTickerProviderSt
       duration: const Duration(milliseconds: 1500),
       vsync: this,
     )..repeat(reverse: true);
-    
     _pulseAnimation = Tween<double>(begin: 1.0, end: 1.1).animate(
       CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
@@ -39,18 +39,18 @@ class _CameraScreenState extends State<CameraScreen> with SingleTickerProviderSt
   }
 
   Future<void> pickImage() async {
-    final picked = await picker.pickImage(source: ImageSource.camera);
+    final source = kIsWeb ? ImageSource.gallery : ImageSource.camera;
+    final picked = await picker.pickImage(source: source, imageQuality: 85);
     if (picked == null) return;
 
+    final bytes = await picked.readAsBytes();
     setState(() {
-      image = File(picked.path);
+      imageBytes = bytes;
       result = "";
       isLoading = true;
     });
 
-    final aiService = AIService();
-    final response = await aiService.analyzeImage(image!);
-
+    final response = await AIService().analyzeImage(bytes);
     setState(() {
       result = response;
       isLoading = false;
@@ -59,7 +59,8 @@ class _CameraScreenState extends State<CameraScreen> with SingleTickerProviderSt
 
   @override
   Widget build(BuildContext context) {
-    double width = MediaQuery.of(context).size.width;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isWide = screenWidth > 800;
 
     return Scaffold(
       body: Container(
@@ -67,394 +68,306 @@ class _CameraScreenState extends State<CameraScreen> with SingleTickerProviderSt
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFF0F2027),
-              Color(0xFF203A43),
-              Color(0xFF2C5364),
-            ],
+            colors: [Color(0xFF0F2027), Color(0xFF203A43), Color(0xFF2C5364)],
           ),
         ),
         child: SafeArea(
-          child: Column(
-            children: [
-              // Custom App Bar
-              Container(
-                padding: EdgeInsets.all(width * 0.04),
-                child: Row(
-                  children: [
-                    GestureDetector(
-                      onTap: () => Navigator.pop(context),
-                      child: Container(
-                        padding: EdgeInsets.all(width * 0.025),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(15),
-                        ),
-                        child: Icon(Icons.arrow_back, color: Colors.white, size: width * 0.06),
-                      ),
-                    ),
-                    SizedBox(width: width * 0.04),
-                    Expanded(
+          child: Center(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: isWide ? 640.0 : double.infinity),
+              child: Column(
+                children: [
+                  _buildAppBar(),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.all(16),
                       child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            'Skin Detection',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: width * 0.05,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          Text(
-                            'AI-powered skin analysis',
-                            style: TextStyle(
-                              color: Colors.white70,
-                              fontSize: width * 0.03,
-                            ),
-                          ),
+                          _buildInfoCard(),
+                          const SizedBox(height: 20),
+                          _buildPreviewArea(),
+                          const SizedBox(height: 20),
+                          _buildActionButton(),
+                          const SizedBox(height: 16),
+                          _buildTipsCard(),
+                          const SizedBox(height: 16),
+                          if (isLoading) _buildLoadingCard(),
+                          if (result.isNotEmpty && !isLoading) _buildResultCard(),
+                          const SizedBox(height: 16),
+                          _buildDisclaimerCard(),
+                          const SizedBox(height: 20),
                         ],
                       ),
                     ),
-                  ],
-                ),
-              ),
-
-              // Content
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: EdgeInsets.all(width * 0.04),
-                  child: Column(
-                    children: [
-                      // Info Card
-                      Container(
-                        padding: EdgeInsets.all(width * 0.04),
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              Colors.purple.withOpacity(0.2),
-                              Colors.deepPurple.withOpacity(0.1),
-                            ],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: Colors.purple.withOpacity(0.3)),
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              padding: EdgeInsets.all(width * 0.03),
-                              decoration: BoxDecoration(
-                                color: Colors.purple.withOpacity(0.2),
-                                borderRadius: BorderRadius.circular(15),
-                              ),
-                              child: Icon(Icons.face_retouching_natural, color: Colors.purple, size: width * 0.08),
-                            ),
-                            SizedBox(width: width * 0.03),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    "Skin Analysis",
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: width * 0.04,
-                                    ),
-                                  ),
-                                  SizedBox(height: width * 0.01),
-                                  Text(
-                                    "Capture an image to detect skin conditions",
-                                    style: TextStyle(
-                                      color: Colors.white70,
-                                      fontSize: width * 0.03,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      SizedBox(height: width * 0.05),
-
-                      // Preview Area
-                      AnimatedBuilder(
-                        animation: _pulseAnimation,
-                        builder: (context, child) {
-                          return Transform.scale(
-                            scale: image == null ? _pulseAnimation.value : 1.0,
-                            child: Container(
-                              height: width * 0.7,
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(25),
-                                border: Border.all(
-                                  color: Colors.purple.withOpacity(0.5),
-                                  width: 3,
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.purple.withOpacity(0.2),
-                                    blurRadius: 30,
-                                    offset: const Offset(0, 10),
-                                  ),
-                                ],
-                              ),
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(22),
-                                child: image != null
-                                    ? Image.file(image!, fit: BoxFit.cover)
-                                    : Container(
-                                        decoration: BoxDecoration(
-                                          gradient: LinearGradient(
-                                            colors: [
-                                              Colors.purple.withOpacity(0.1),
-                                              Colors.deepPurple.withOpacity(0.1),
-                                            ],
-                                            begin: Alignment.topCenter,
-                                            end: Alignment.bottomCenter,
-                                          ),
-                                        ),
-                                        child: Column(
-                                          mainAxisAlignment: MainAxisAlignment.center,
-                                          children: [
-                                            Container(
-                                              padding: EdgeInsets.all(width * 0.04),
-                                              decoration: BoxDecoration(
-                                                color: Colors.purple.withOpacity(0.2),
-                                                borderRadius: BorderRadius.circular(20),
-                                              ),
-                                              child: Icon(
-                                                Icons.camera_alt,
-                                                size: width * 0.15,
-                                                color: Colors.purple,
-                                              ),
-                                            ),
-                                            SizedBox(height: width * 0.04),
-                                            Text(
-                                              "Tap to Capture",
-                                              style: TextStyle(
-                                                color: Colors.white70,
-                                                fontSize: width * 0.04,
-                                                fontWeight: FontWeight.w600,
-                                              ),
-                                            ),
-                                            SizedBox(height: width * 0.02),
-                                            Text(
-                                              "Position the affected area in frame",
-                                              style: TextStyle(
-                                                color: Colors.white54,
-                                                fontSize: width * 0.03,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-
-                      SizedBox(height: width * 0.05),
-
-                      // Capture Button
-                      GestureDetector(
-                        onTap: isLoading ? null : pickImage,
-                        child: Container(
-                          width: double.infinity,
-                          padding: EdgeInsets.all(width * 0.045),
-                          decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [Color(0xFF8E2DE2), Color(0xFF4A00E0)],
-                            ),
-                            borderRadius: BorderRadius.circular(20),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.purple.withOpacity(0.5),
-                                blurRadius: 20,
-                                offset: const Offset(0, 8),
-                              ),
-                            ],
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.camera, color: Colors.white, size: width * 0.06),
-                              SizedBox(width: width * 0.02),
-                              Text(
-                                image == null ? "Capture Image" : "Capture Another",
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: width * 0.045,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-
-                      SizedBox(height: width * 0.04),
-
-                      // Tips
-                      Container(
-                        padding: EdgeInsets.all(width * 0.03),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.05),
-                          borderRadius: BorderRadius.circular(15),
-                          border: Border.all(color: Colors.white24),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(Icons.lightbulb_outline, color: Colors.amber, size: width * 0.05),
-                            SizedBox(width: width * 0.02),
-                            Expanded(
-                              child: Text(
-                                "Ensure good lighting for accurate analysis",
-                                style: TextStyle(
-                                  color: Colors.white70,
-                                  fontSize: width * 0.03,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      SizedBox(height: width * 0.04),
-
-                      // Loading
-                      if (isLoading)
-                        Container(
-                          padding: EdgeInsets.all(width * 0.05),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Column(
-                            children: [
-                              const CircularProgressIndicator(color: Colors.purple),
-                              SizedBox(height: width * 0.03),
-                              Text(
-                                "Analyzing skin...",
-                                style: TextStyle(
-                                  color: Colors.white70,
-                                  fontSize: width * 0.035,
-                                ),
-                              ),
-                              SizedBox(height: width * 0.01),
-                              Text(
-                                "Our AI is examining the image",
-                                style: TextStyle(
-                                  color: Colors.white54,
-                                  fontSize: width * 0.028,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-
-                      // Result
-                      if (result.isNotEmpty && !isLoading)
-                        Container(
-                          padding: EdgeInsets.all(width * 0.04),
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [
-                                Colors.white.withOpacity(0.15),
-                                Colors.white.withOpacity(0.1),
-                              ],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(color: Colors.purple.withOpacity(0.3)),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.purple.withOpacity(0.1),
-                                blurRadius: 20,
-                                offset: const Offset(0, 8),
-                              ),
-                            ],
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Container(
-                                    padding: EdgeInsets.all(width * 0.02),
-                                    decoration: BoxDecoration(
-                                      color: Colors.green.withOpacity(0.2),
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                    child: Icon(Icons.check_circle, color: Colors.green, size: width * 0.06),
-                                  ),
-                                  SizedBox(width: width * 0.02),
-                                  Text(
-                                    "Analysis Result",
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: width * 0.045,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              SizedBox(height: width * 0.03),
-                              const Divider(color: Colors.white24),
-                              SizedBox(height: width * 0.03),
-                              Text(
-                                result,
-                                style: TextStyle(
-                                  color: Colors.white70,
-                                  fontSize: width * 0.035,
-                                  height: 1.7,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-
-                      SizedBox(height: width * 0.04),
-
-                      // Disclaimer
-                      Container(
-                        padding: EdgeInsets.all(width * 0.03),
-                        decoration: BoxDecoration(
-                          color: Colors.amber.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(15),
-                          border: Border.all(color: Colors.amber.withOpacity(0.3)),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(Icons.warning_amber, color: Colors.amber, size: width * 0.05),
-                            SizedBox(width: width * 0.02),
-                            Expanded(
-                              child: Text(
-                                "⚠️ This is AI-generated analysis and should not replace professional dermatological advice.",
-                                style: TextStyle(
-                                  color: Colors.amber,
-                                  fontSize: width * 0.028,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      SizedBox(height: width * 0.05),
-                    ],
                   ),
-                ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildAppBar() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      child: Row(
+        children: [
+          GestureDetector(
+            onTap: () => Navigator.pop(context),
+            child: Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(15),
+              ),
+              child: const Icon(Icons.arrow_back, color: Colors.white, size: 24),
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Skin Detection',
+                  style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+                ),
+                Text(
+                  kIsWeb ? 'AI skin analysis (upload image)' : 'AI-powered skin analysis',
+                  style: const TextStyle(color: Colors.white70, fontSize: 13),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoCard() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Colors.purple.withValues(alpha: 0.2), Colors.deepPurple.withValues(alpha: 0.1)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.purple.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.purple.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(15),
+            ),
+            child: const Icon(Icons.face_retouching_natural, color: Colors.purple, size: 36),
+          ),
+          const SizedBox(width: 12),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text("Skin Analysis", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+                SizedBox(height: 4),
+                Text("Upload or capture an image to detect skin conditions",
+                    style: TextStyle(color: Colors.white70, fontSize: 13)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPreviewArea() {
+    return AnimatedBuilder(
+      animation: _pulseAnimation,
+      builder: (context, child) {
+        return Transform.scale(
+          scale: imageBytes == null ? _pulseAnimation.value : 1.0,
+          child: Container(
+            height: 260,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(25),
+              border: Border.all(color: Colors.purple.withValues(alpha: 0.5), width: 3),
+              boxShadow: [
+                BoxShadow(color: Colors.purple.withValues(alpha: 0.2), blurRadius: 30, offset: const Offset(0, 10)),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(22),
+              child: imageBytes != null
+                  ? Image.memory(imageBytes!, fit: BoxFit.cover, width: double.infinity)
+                  : Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            Colors.purple.withValues(alpha: 0.1),
+                            Colors.deepPurple.withValues(alpha: 0.1),
+                          ],
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                        ),
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: Colors.purple.withValues(alpha: 0.2),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Icon(kIsWeb ? Icons.upload_file : Icons.camera_alt, size: 56, color: Colors.purple),
+                          ),
+                          const SizedBox(height: 16),
+                          Text(kIsWeb ? "Tap to Upload" : "Tap to Capture",
+                              style: const TextStyle(color: Colors.white70, fontSize: 16, fontWeight: FontWeight.w600)),
+                          const SizedBox(height: 8),
+                          const Text("Position the affected area in frame",
+                              style: TextStyle(color: Colors.white54, fontSize: 12)),
+                        ],
+                      ),
+                    ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildActionButton() {
+    return GestureDetector(
+      onTap: isLoading ? null : pickImage,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(colors: [Color(0xFF8E2DE2), Color(0xFF4A00E0)]),
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [BoxShadow(color: Colors.purple.withValues(alpha: 0.5), blurRadius: 20, offset: const Offset(0, 8))],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(kIsWeb ? Icons.upload_file : Icons.camera, color: Colors.white, size: 24),
+            const SizedBox(width: 10),
+            Text(
+              imageBytes == null
+                  ? (kIsWeb ? "Upload Image" : "Capture Image")
+                  : (kIsWeb ? "Upload Another" : "Capture Another"),
+              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTipsCard() {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(15),
+        border: Border.all(color: Colors.white24),
+      ),
+      child: const Row(
+        children: [
+          Icon(Icons.lightbulb_outline, color: Colors.amber, size: 20),
+          SizedBox(width: 8),
+          Expanded(
+            child: Text("Ensure good lighting for accurate analysis",
+                style: TextStyle(color: Colors.white70, fontSize: 13)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLoadingCard() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: const Column(
+        children: [
+          CircularProgressIndicator(color: Colors.purple),
+          SizedBox(height: 12),
+          Text("Analyzing skin...", style: TextStyle(color: Colors.white70, fontSize: 14)),
+          SizedBox(height: 4),
+          Text("Our AI is examining the image", style: TextStyle(color: Colors.white54, fontSize: 12)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildResultCard() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Colors.white.withValues(alpha: 0.15), Colors.white.withValues(alpha: 0.1)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.purple.withValues(alpha: 0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.green.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.check_circle, color: Colors.green, size: 24),
+              ),
+              const SizedBox(width: 8),
+              const Text("Analysis Result",
+                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)),
+            ],
+          ),
+          const SizedBox(height: 12),
+          const Divider(color: Colors.white24),
+          const SizedBox(height: 12),
+          Text(result, style: const TextStyle(color: Colors.white70, fontSize: 14, height: 1.7)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDisclaimerCard() {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.amber.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(15),
+        border: Border.all(color: Colors.amber.withValues(alpha: 0.3)),
+      ),
+      child: const Row(
+        children: [
+          Icon(Icons.warning_amber, color: Colors.amber, size: 20),
+          SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              "⚠️ AI-generated analysis only. Not a substitute for professional dermatological advice.",
+              style: TextStyle(color: Colors.amber, fontSize: 12),
+            ),
+          ),
+        ],
       ),
     );
   }

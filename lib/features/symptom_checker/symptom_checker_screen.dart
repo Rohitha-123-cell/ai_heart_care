@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../core/constants/colors.dart';
+import '../../core/utils/responsive.dart';
 import '../../core/widgets/glass_card.dart';
 import '../../widgets/custom_button.dart';
 import '../../services/ai_service.dart';
@@ -92,7 +93,8 @@ class _SymptomCheckerScreenState extends State<SymptomCheckerScreen> {
 
   @override
   Widget build(BuildContext context) {
-    double width = MediaQuery.of(context).size.width;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final width = screenWidth.clamp(0.0, 520.0).toDouble();
     double height = MediaQuery.of(context).size.height;
 
     return Scaffold(
@@ -145,7 +147,10 @@ class _SymptomCheckerScreenState extends State<SymptomCheckerScreen> {
             ),
 
             SafeArea(
-              child: Column(
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(maxWidth: Responsive.maxContentWidth(context)),
+                  child: Column(
                 children: [
                   // Header
                   Padding(
@@ -390,6 +395,8 @@ class _SymptomCheckerScreenState extends State<SymptomCheckerScreen> {
                     ),
                   ),
                 ],
+                  ),
+                ),
               ),
             ),
           ],
