@@ -131,34 +131,22 @@ class _PatientScreenContent extends StatelessWidget {
       // Bottom navigation buttons
       bottomNavigationBar: BlocBuilder<PatientBloc, PatientState>(
         builder: (context, state) {
-          return Container(
-            padding: EdgeInsets.only(
-              left: 16,
-              right: 16,
-              top: 16,
-              bottom: MediaQuery.of(context).padding.bottom + 16,
-            ),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 10,
-                  offset: const Offset(0, -5),
-                ),
-              ],
-            ),
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final maxWidth = Responsive.maxContentWidth(context);
-                final contentWidth = constraints.maxWidth < maxWidth
-                    ? constraints.maxWidth
-                    : maxWidth;
-                return Align(
+          final contentWidth = Responsive.maxContentWidth(context);
+
+          return Material(
+            color: Colors.white,
+            elevation: 10,
+            child: SafeArea(
+              top: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+                child: Align(
                   alignment: Alignment.center,
-                  child: SizedBox(
-                    width: contentWidth,
+                  heightFactor: 1,
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(maxWidth: contentWidth),
                     child: Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
                 // Back button
                 if (state.canGoPrevious)
@@ -231,8 +219,8 @@ class _PatientScreenContent extends StatelessWidget {
                       ],
                     ),
                   ),
-                );
-              },
+                ),
+              ),
             ),
           );
         },

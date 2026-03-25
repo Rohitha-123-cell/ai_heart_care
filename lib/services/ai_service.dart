@@ -4,63 +4,6 @@ import 'package:http/http.dart' as http;
 
 class AIService {
   final String apiKey = "AIzaSyAjz06R1BDvoUZyM_HhOiGuf8SFTznKu-M";
-  static const Set<String> _healthKeywords = {
-    'health',
-    'medical',
-    'doctor',
-    'medicine',
-    'tablet',
-    'drug',
-    'symptom',
-    'symptoms',
-    'disease',
-    'diseases',
-    'condition',
-    'conditions',
-    'diagnosis',
-    'diagnose',
-    'treatment',
-    'pain',
-    'ache',
-    'fever',
-    'cold',
-    'flu',
-    'covid',
-    'covid-19',
-    'migraine',
-    'headache',
-    'cough',
-    'sore throat',
-    'throat',
-    'infection',
-    'virus',
-    'viral',
-    'bacterial',
-    'allergy',
-    'rash',
-    'skin',
-    'vomit',
-    'vomiting',
-    'nausea',
-    'diarrhea',
-    'stomach',
-    'chest',
-    'breathing',
-    'breath',
-    'heart',
-    'bp',
-    'blood pressure',
-    'sugar',
-    'diabetes',
-    'fatigue',
-    'dizzy',
-    'dizziness',
-    'sick',
-    'ill',
-    'hospital',
-    'clinic',
-  };
-
   Future<String> _sendRequest(String prompt, {Uint8List? imageBytes}) async {
     try {
       final url = Uri.parse(
@@ -106,22 +49,20 @@ class AIService {
     }
   }
 
-  bool _looksHealthRelated(String message) {
-    final lowerMessage = message.toLowerCase().trim();
-    if (lowerMessage.isEmpty) {
-      return false;
-    }
-
-    return _healthKeywords.any(lowerMessage.contains);
-  }
-
   // Chatbot
   Future<String> sendMessage(String message) async {
-    if (!_looksHealthRelated(message)) {
-      return "I'm sorry, but I can only assist with health-related questions. Please ask about symptoms, medicines, or medical concerns.";
+    final trimmedMessage = message.trim();
+    if (trimmedMessage.isEmpty) {
+      return "Please enter your health question.";
     }
     
-    return await _sendRequest("You are a helpful medical assistant. Answer concisely in 2-3 sentences. If the user mentions a disease or symptom like migraine, flu, or COVID, treat it as a valid health query. Ask if they have other symptoms. No disclaimer needed.\nUser: $message");
+    return await _sendRequest(
+      "You are a helpful medical assistant. Treat common misspellings like migrane for migraine as valid health queries."
+      " If the user asks something non-health-related, politely redirect them back to health topics in one short sentence."
+      " If the user mentions a symptom, disease, medicine, infection, or condition, answer concisely in 2-3 sentences and ask if they have other symptoms."
+      " No disclaimer needed."
+      "\nUser: $trimmedMessage",
+    );
   }
 
   // Symptom Checker
