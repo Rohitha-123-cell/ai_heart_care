@@ -1,36 +1,37 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AuthService {
-
   final SupabaseClient _client = Supabase.instance.client;
 
-  // 🔐 SIGN UP
   Future<AuthResponse> signUp({
     required String email,
     required String password,
   }) async {
-    return await _client.auth.signUp(
+    return _client.auth.signUp(
       email: email,
       password: password,
     );
   }
 
-  // 🔐 LOGIN
   Future<AuthResponse> signIn({
     required String email,
     required String password,
   }) async {
-    return await _client.auth.signInWithPassword(
+    return _client.auth.signInWithPassword(
       email: email,
       password: password,
     );
   }
 
-  // 🚪 LOGOUT
   Future<void> signOut() async {
-    await _client.auth.signOut();
+    if (_client.auth.currentUser == null) return;
+
+    try {
+      await _client.auth.signOut();
+    } on AuthException {
+      // If the session is already invalid, the app should still consider the user logged out.
+    }
   }
 
-  // 👤 CURRENT USER
   User? get currentUser => _client.auth.currentUser;
 }

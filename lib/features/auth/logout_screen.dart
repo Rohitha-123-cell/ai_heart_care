@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:math' as math;
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../bloc/auth/auth_bloc.dart';
+import '../../bloc/auth/auth_event.dart';
 import '../../core/constants/colors.dart';
 import '../../services/auth_service.dart';
 import 'login_screen.dart';
@@ -60,6 +63,7 @@ class _LogoutScreenState extends State<LogoutScreen>
     try {
       await _authService.signOut();
       if (mounted) {
+        context.read<AuthBloc>().add(AuthLogoutRequested());
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (_) => const LoginScreen()),
           (route) => false,
@@ -67,9 +71,10 @@ class _LogoutScreenState extends State<LogoutScreen>
       }
     } catch (e) {
       if (mounted) {
-        setState(() => _isLoggingOut = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Logout failed: ${e.toString()}")),
+        context.read<AuthBloc>().add(AuthLogoutRequested());
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const LoginScreen()),
+          (route) => false,
         );
       }
     }
