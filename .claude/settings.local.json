@@ -3,7 +3,9 @@
     "allow": [
       "Bash(find c:UsersPradeepStudioProjectsai_heart_care -type d -not -path */.dart_tool* -not -path */.git*)",
       "Bash(find c:UsersPradeepStudioProjectsai_heart_care -name *pdf* -o -name *share*)",
-      "Bash(flutter pub:*)"
+      "Bash(flutter pub:*)",
+      "Bash(flutter analyze:*)",
+      "Bash(flutter build:*)"
     ]
   }
 }

@@ -1,3 +1,5 @@
+import 'package:supabase_flutter/supabase_flutter.dart';
+
 class CycleRecord {
   final DateTime startDate;
   final DateTime endDate;
@@ -14,6 +16,23 @@ class CycleRecord {
   });
 
   int get periodLength => endDate.difference(startDate).inDays + 1;
+
+  Map<String, dynamic> toJson(String userId) => {
+    'user_id': userId,
+    'start_date': startDate.toIso8601String(),
+    'end_date': endDate.toIso8601String(),
+    'average_temperature': averageTemperature,
+    'health_condition': healthCondition,
+    'flow_intensity': flowIntensity,
+  };
+
+  factory CycleRecord.fromJson(Map<String, dynamic> json) => CycleRecord(
+    startDate: DateTime.parse(json['start_date'] as String),
+    endDate: DateTime.parse(json['end_date'] as String),
+    averageTemperature: (json['average_temperature'] as num).toDouble(),
+    healthCondition: json['health_condition'] as String,
+    flowIntensity: json['flow_intensity'] as String,
+  );
 }
 
 class SymptomEntry {
@@ -32,6 +51,28 @@ class SymptomEntry {
     required this.bodyChanges,
     required this.notes,
   });
+
+  Map<String, dynamic> toJson(String userId) => {
+    'user_id': userId,
+    'date': date.toIso8601String(),
+    'symptoms': symptoms.join(','),
+    'flow_intensity': flowIntensity,
+    'body_temperature': bodyTemperature,
+    'body_changes': bodyChanges,
+    'notes': notes,
+  };
+
+  factory SymptomEntry.fromJson(Map<String, dynamic> json) => SymptomEntry(
+    date: DateTime.parse(json['date'] as String),
+    symptoms: (json['symptoms'] as String)
+        .split(',')
+        .where((s) => s.isNotEmpty)
+        .toList(),
+    flowIntensity: json['flow_intensity'] as String,
+    bodyTemperature: (json['body_temperature'] as num).toDouble(),
+    bodyChanges: json['body_changes'] as String,
+    notes: json['notes'] as String,
+  );
 }
 
 class ReminderItem {
@@ -77,6 +118,62 @@ class CyclePrediction {
 }
 
 class MenstrualCycleService {
+  static final _client = Supabase.instance.client;
+
+  static String? get _userId => _client.auth.currentUser?.id;
+
+  static Future<List<CycleRecord>> loadCycleRecords() async {
+    final uid = _userId;
+    if (uid == null) return [];
+    try {
+      final rows = await _client
+          .from('menstrual_cycles')
+          .select()
+          .eq('user_id', uid)
+          .order('start_date', ascending: true);
+      return (rows as List).map((e) => CycleRecord.fromJson(e)).toList();
+    } catch (_) {
+      return [];
+    }
+  }
+
+  static Future<bool> saveCycleRecord(CycleRecord record) async {
+    final uid = _userId;
+    if (uid == null) return false;
+    try {
+      await _client.from('menstrual_cycles').insert(record.toJson(uid));
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  static Future<List<SymptomEntry>> loadSymptomEntries() async {
+    final uid = _userId;
+    if (uid == null) return [];
+    try {
+      final rows = await _client
+          .from('menstrual_symptoms')
+          .select()
+          .eq('user_id', uid)
+          .order('date', ascending: true);
+      return (rows as List).map((e) => SymptomEntry.fromJson(e)).toList();
+    } catch (_) {
+      return [];
+    }
+  }
+
+  static Future<bool> saveSymptomEntry(SymptomEntry entry) async {
+    final uid = _userId;
+    if (uid == null) return false;
+    try {
+      await _client.from('menstrual_symptoms').insert(entry.toJson(uid));
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
   static const List<String> commonSymptoms = [
     'Cramps',
     'Mood swings',

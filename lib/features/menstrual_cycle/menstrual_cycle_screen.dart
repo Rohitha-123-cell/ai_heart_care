@@ -13,56 +13,9 @@ class MenstrualCycleScreen extends StatefulWidget {
 }
 
 class _MenstrualCycleScreenState extends State<MenstrualCycleScreen> {
-  final List<CycleRecord> _cycleRecords = [
-    CycleRecord(
-      startDate: DateTime(2026, 1, 12),
-      endDate: DateTime(2026, 1, 16),
-      averageTemperature: 36.6,
-      healthCondition: 'Stable',
-      flowIntensity: 'Moderate',
-    ),
-    CycleRecord(
-      startDate: DateTime(2026, 2, 10),
-      endDate: DateTime(2026, 2, 15),
-      averageTemperature: 36.8,
-      healthCondition: 'Low energy',
-      flowIntensity: 'Heavy',
-    ),
-    CycleRecord(
-      startDate: DateTime(2026, 3, 11),
-      endDate: DateTime(2026, 3, 15),
-      averageTemperature: 36.9,
-      healthCondition: 'Stable',
-      flowIntensity: 'Moderate',
-    ),
-  ];
-
-  final List<SymptomEntry> _symptomEntries = [
-    SymptomEntry(
-      date: DateTime(2026, 3, 11),
-      symptoms: const ['Cramps', 'Fatigue'],
-      flowIntensity: 'Heavy',
-      bodyTemperature: 36.9,
-      bodyChanges: 'Bloating and lower-back tightness',
-      notes: 'Needed extra rest in the afternoon.',
-    ),
-    SymptomEntry(
-      date: DateTime(2026, 3, 12),
-      symptoms: const ['Mood swings', 'Cramps'],
-      flowIntensity: 'Moderate',
-      bodyTemperature: 37.0,
-      bodyChanges: 'Breast tenderness',
-      notes: 'Hydration helped a little.',
-    ),
-    SymptomEntry(
-      date: DateTime(2026, 3, 24),
-      symptoms: const ['Fatigue', 'Acne'],
-      flowIntensity: 'Light',
-      bodyTemperature: 36.7,
-      bodyChanges: 'Mild skin breakout',
-      notes: 'Possible PMS onset.',
-    ),
-  ];
+  List<CycleRecord> _cycleRecords = [];
+  List<SymptomEntry> _symptomEntries = [];
+  bool _isLoading = true;
 
   DateTime? _newPeriodStart;
   DateTime? _newPeriodEnd;
@@ -101,9 +54,44 @@ class _MenstrualCycleScreenState extends State<MenstrualCycleScreen> {
   );
 
   @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    final cycles = await MenstrualCycleService.loadCycleRecords();
+    final symptoms = await MenstrualCycleService.loadSymptomEntries();
+    if (!mounted) return;
+    setState(() {
+      _cycleRecords = cycles;
+      _symptomEntries = symptoms;
+      _isLoading = false;
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final prediction = _prediction;
     final isDesktop = Responsive.isDesktop(context);
+
+    if (_isLoading) {
+      return Scaffold(
+        body: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFF240046), Color(0xFF5A189A), Color(0xFFE76F51)],
+            ),
+          ),
+          child: const Center(
+            child: CircularProgressIndicator(color: Colors.white),
+          ),
+        ),
+      );
+    }
+
+    final prediction = _prediction;
 
     return Scaffold(
       body: Container(
@@ -358,6 +346,7 @@ class _MenstrualCycleScreenState extends State<MenstrualCycleScreen> {
   }
 
   Widget _buildStatGrid(CyclePrediction prediction) {
+    final latest = _cycleRecords.isNotEmpty ? _cycleRecords.last : null;
     final stats = [
       _StatData(
         title: 'Average cycle',
@@ -371,17 +360,19 @@ class _MenstrualCycleScreenState extends State<MenstrualCycleScreen> {
       ),
       _StatData(
         title: 'Temperature',
-        value: '${_cycleRecords.last.averageTemperature.toStringAsFixed(1)} C',
+        value: latest != null
+            ? '${latest.averageTemperature.toStringAsFixed(1)} °C'
+            : '-- °C',
         color: const Color(0xFF2563EB),
       ),
       _StatData(
         title: 'Current flow',
-        value: _cycleRecords.last.flowIntensity,
+        value: latest?.flowIntensity ?? '--',
         color: const Color(0xFFF97316),
       ),
       _StatData(
         title: 'Condition',
-        value: _cycleRecords.last.healthCondition,
+        value: latest?.healthCondition ?? '--',
         color: const Color(0xFF0F766E),
       ),
       _StatData(
@@ -1174,34 +1165,32 @@ class _MenstrualCycleScreenState extends State<MenstrualCycleScreen> {
     );
   }
 
-  void _addCycleRecord() {
+  Future<void> _addCycleRecord() async {
     if (_newPeriodStart == null || _newPeriodEnd == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Select both period start and end dates.'),
-        ),
+        const SnackBar(content: Text('Select both period start and end dates.')),
       );
       return;
     }
     if (_newPeriodEnd!.isBefore(_newPeriodStart!)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Period end date must be after the start date.'),
-        ),
+        const SnackBar(content: Text('Period end date must be after the start date.')),
       );
       return;
     }
 
+    final record = CycleRecord(
+      startDate: _newPeriodStart!,
+      endDate: _newPeriodEnd!,
+      averageTemperature: _recordTemperature,
+      healthCondition: _selectedCondition,
+      flowIntensity: _selectedFlow,
+    );
+
+    await MenstrualCycleService.saveCycleRecord(record);
+
     setState(() {
-      _cycleRecords.add(
-        CycleRecord(
-          startDate: _newPeriodStart!,
-          endDate: _newPeriodEnd!,
-          averageTemperature: _recordTemperature,
-          healthCondition: _selectedCondition,
-          flowIntensity: _selectedFlow,
-        ),
-      );
+      _cycleRecords.add(record);
       _newPeriodStart = null;
       _newPeriodEnd = null;
       _recordTemperature = 36.8;
@@ -1209,34 +1198,36 @@ class _MenstrualCycleScreenState extends State<MenstrualCycleScreen> {
       _selectedFlow = 'Moderate';
     });
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Cycle record added successfully.')),
-    );
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Cycle record saved successfully.')),
+      );
+    }
   }
 
-  void _addSymptomEntry() {
+  Future<void> _addSymptomEntry() async {
     if (_selectedSymptoms.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Select at least one symptom to continue.'),
-        ),
+        const SnackBar(content: Text('Select at least one symptom to continue.')),
       );
       return;
     }
 
+    final entry = SymptomEntry(
+      date: _symptomDate,
+      symptoms: _selectedSymptoms.toList()..sort(),
+      flowIntensity: _selectedSymptomFlow,
+      bodyTemperature: _symptomTemperature,
+      bodyChanges: _bodyChanges.trim().isEmpty
+          ? 'No major body changes noted'
+          : _bodyChanges.trim(),
+      notes: _symptomNotes.trim(),
+    );
+
+    await MenstrualCycleService.saveSymptomEntry(entry);
+
     setState(() {
-      _symptomEntries.add(
-        SymptomEntry(
-          date: _symptomDate,
-          symptoms: _selectedSymptoms.toList()..sort(),
-          flowIntensity: _selectedSymptomFlow,
-          bodyTemperature: _symptomTemperature,
-          bodyChanges: _bodyChanges.trim().isEmpty
-              ? 'No major body changes noted'
-              : _bodyChanges.trim(),
-          notes: _symptomNotes.trim(),
-        ),
-      );
+      _symptomEntries.add(entry);
       _symptomDate = DateTime.now();
       _selectedSymptoms
         ..clear()
@@ -1247,9 +1238,11 @@ class _MenstrualCycleScreenState extends State<MenstrualCycleScreen> {
       _symptomNotes = '';
     });
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Daily symptom entry added successfully.')),
-    );
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Symptom entry saved successfully.')),
+      );
+    }
   }
 
   String _formatDate(DateTime date) {

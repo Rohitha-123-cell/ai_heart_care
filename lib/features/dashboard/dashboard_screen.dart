@@ -638,6 +638,16 @@ class _DashboardScreenState extends State<DashboardScreen>
             MaterialPageRoute(builder: (_) => const StressDetectionScreen()),
           ),
         ),
+        _ToolItem(
+          title: "Menstrual Cycle",
+          subtitle: "Track cycles, symptoms & predictions",
+          icon: Icons.female_rounded,
+          color: const Color(0xFFBE185D),
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const MenstrualCycleScreen()),
+          ),
+        ),
       ];
 
   List<_ToolItem> _coreTools(BuildContext context) => [
