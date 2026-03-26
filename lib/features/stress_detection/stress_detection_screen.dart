@@ -40,6 +40,75 @@ class _StressDetectionScreenState extends State<StressDetectionScreen>
   List<int> _heartRateReadings = [];
   bool _fingerprintAvailable = false;
 
+  // Questionnaire state
+  bool _useQuestionnaire = false;
+  int _currentQuestionIndex = 0;
+  final List<int> _questionAnswers = [];
+  bool _quizInProgress = false;
+
+  static const List<Map<String, dynamic>> _stressQuestions = [
+    {
+      'question': 'How often have you felt nervous or stressed lately?',
+      'icon': '😰',
+      'options': ['Rarely', 'Occasionally', 'Sometimes', 'Quite often', 'Very often'],
+    },
+    {
+      'question': 'How well did you sleep last night?',
+      'icon': '😴',
+      'options': ['Very well (8+ hrs)', 'Well (7–8 hrs)', 'Fairly (6–7 hrs)', 'Poorly (5–6 hrs)', 'Badly (<5 hrs)'],
+    },
+    {
+      'question': 'How is your energy level right now?',
+      'icon': '⚡',
+      'options': ['Very high', 'High', 'Moderate', 'Low', 'Very low'],
+    },
+    {
+      'question': 'How often have you felt overwhelmed by your tasks?',
+      'icon': '🌊',
+      'options': ['Not at all', 'Slightly', 'Somewhat', 'Quite a bit', 'Extremely'],
+    },
+    {
+      'question': 'How tense are your muscles right now? (shoulders, neck, jaw)',
+      'icon': '💪',
+      'options': ['Very relaxed', 'Relaxed', 'Slightly tense', 'Tense', 'Very tense'],
+    },
+    {
+      'question': 'How often have you had difficulty concentrating today?',
+      'icon': '🧠',
+      'options': ['Never', 'Rarely', 'Sometimes', 'Often', 'Very often'],
+    },
+    {
+      'question': 'How often have you felt irritable or easily angered today?',
+      'icon': '😤',
+      'options': ['Not at all', 'Slightly', 'Moderately', 'Quite a bit', 'Extremely'],
+    },
+    {
+      'question': 'How much control do you feel over your daily tasks?',
+      'icon': '🎯',
+      'options': ['Full control', 'Mostly in control', 'Some control', 'Little control', 'No control'],
+    },
+    {
+      'question': 'How is your appetite today?',
+      'icon': '🍽️',
+      'options': ['Very good', 'Good', 'Normal', 'Poor', 'Very poor'],
+    },
+    {
+      'question': 'How often have you been worrying about unfinished tasks?',
+      'icon': '📋',
+      'options': ['Never', 'Rarely', 'Sometimes', 'Often', 'Constantly'],
+    },
+    {
+      'question': 'Have you experienced headaches or body aches today?',
+      'icon': '🤕',
+      'options': ['None at all', 'Very mild', 'Moderate', 'Frequent', 'Severe'],
+    },
+    {
+      'question': 'How satisfied are you with your current life situation?',
+      'icon': '😊',
+      'options': ['Very satisfied', 'Satisfied', 'Neutral', 'Dissatisfied', 'Very dissatisfied'],
+    },
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -408,6 +477,40 @@ class _StressDetectionScreenState extends State<StressDetectionScreen>
     _progressController.stop();
   }
 
+  // ── Questionnaire logic ──────────────────────────────────────────────────
+
+  void _startQuestionnaire() {
+    setState(() {
+      _currentQuestionIndex = 0;
+      _questionAnswers.clear();
+      _quizInProgress = true;
+      _stressScore = 0;
+      _displayStressScore = 0;
+      _suggestions = [];
+      _statusText = "Ready to Scan";
+    });
+  }
+
+  void _answerQuestion(int score) {
+    setState(() {
+      _questionAnswers.add(score);
+      if (_currentQuestionIndex < _stressQuestions.length - 1) {
+        _currentQuestionIndex++;
+      } else {
+        _calculateQuizStress();
+      }
+    });
+  }
+
+  void _calculateQuizStress() {
+    final total = _questionAnswers.fold(0, (sum, v) => sum + v);
+    final maxPossible = _stressQuestions.length * 4;
+    _stressScore = (total / maxPossible * 100).clamp(0.0, 100.0);
+    _suggestions = _getSuggestions(_stressScore);
+    _quizInProgress = false;
+    _animateStressScore();
+  }
+
   Color _getStressColor() {
     if (_displayStressScore < 30) return Colors.green;
     if (_displayStressScore < 50) return Colors.lightGreen;
@@ -446,17 +549,25 @@ class _StressDetectionScreenState extends State<StressDetectionScreen>
                   padding: EdgeInsets.all(width * 0.04),
                   child: Column(
                     children: [
-                      _buildStressCircleCard(width),
-                      SizedBox(height: width * 0.05),
-                      _buildMetricsCards(width),
-                      SizedBox(height: width * 0.05),
-                      _buildDataSourceIndicator(width),
+                      _buildMethodSelector(width),
                       SizedBox(height: width * 0.04),
-                      _buildActionButton(width),
-                      SizedBox(height: width * 0.04),
-                      if (_suggestions.isNotEmpty) _buildSuggestionsCard(width),
-                      SizedBox(height: width * 0.04),
-                      _buildInfoCard(width),
+                      if (_useQuestionnaire && _quizInProgress)
+                        _buildQuizCard(width)
+                      else ...[
+                        _buildStressCircleCard(width),
+                        SizedBox(height: width * 0.05),
+                        if (!_useQuestionnaire) ...[
+                          _buildMetricsCards(width),
+                          SizedBox(height: width * 0.05),
+                          _buildDataSourceIndicator(width),
+                          SizedBox(height: width * 0.04),
+                        ],
+                        _buildActionButton(width),
+                        SizedBox(height: width * 0.04),
+                        if (_suggestions.isNotEmpty) _buildSuggestionsCard(width),
+                        SizedBox(height: width * 0.04),
+                        _buildInfoCard(width),
+                      ],
                     ],
                   ),
                 ),
@@ -468,6 +579,209 @@ class _StressDetectionScreenState extends State<StressDetectionScreen>
         ),
       ),
     );
+  }
+
+  Widget _buildMethodSelector(double width) {
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Row(
+        children: [
+          _methodTab(
+            width: width,
+            icon: Icons.fingerprint,
+            label: 'Biometric Scan',
+            selected: !_useQuestionnaire,
+            onTap: () => setState(() {
+              _useQuestionnaire = false;
+              _quizInProgress = false;
+              _stressScore = 0;
+              _displayStressScore = 0;
+              _suggestions = [];
+              _statusText = 'Ready to Scan';
+            }),
+          ),
+          _methodTab(
+            width: width,
+            icon: Icons.quiz_outlined,
+            label: 'Stress Quiz',
+            selected: _useQuestionnaire,
+            onTap: () => setState(() {
+              _useQuestionnaire = true;
+              _quizInProgress = false;
+              _stressScore = 0;
+              _displayStressScore = 0;
+              _suggestions = [];
+              _currentQuestionIndex = 0;
+              _questionAnswers.clear();
+            }),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _methodTab({
+    required double width,
+    required IconData icon,
+    required String label,
+    required bool selected,
+    required VoidCallback onTap,
+  }) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: EdgeInsets.symmetric(vertical: width * 0.03),
+          decoration: BoxDecoration(
+            color: selected ? const Color(0xFF667eea) : Colors.transparent,
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, color: Colors.white, size: width * 0.045),
+              SizedBox(width: width * 0.015),
+              Text(
+                label,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: selected ? FontWeight.bold : FontWeight.normal,
+                  fontSize: width * 0.03,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildQuizCard(double width) {
+    final q = _stressQuestions[_currentQuestionIndex];
+    final progress = (_currentQuestionIndex + 1) / _stressQuestions.length;
+
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(width * 0.05),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.07),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.white.withOpacity(0.15)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Progress bar
+          Row(
+            children: [
+              Text(
+                'Question ${_currentQuestionIndex + 1} of ${_stressQuestions.length}',
+                style: TextStyle(color: Colors.white70, fontSize: width * 0.028),
+              ),
+              const Spacer(),
+              Text(
+                '${(_currentQuestionIndex / _stressQuestions.length * 100).toInt()}%',
+                style: TextStyle(color: const Color(0xFF667eea), fontSize: width * 0.028, fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+          SizedBox(height: width * 0.02),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: LinearProgressIndicator(
+              value: progress,
+              minHeight: 6,
+              backgroundColor: Colors.white.withOpacity(0.1),
+              valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF667eea)),
+            ),
+          ),
+          SizedBox(height: width * 0.05),
+
+          // Question
+          Text(
+            q['icon'] as String,
+            style: TextStyle(fontSize: width * 0.1),
+          ),
+          SizedBox(height: width * 0.025),
+          Text(
+            q['question'] as String,
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: width * 0.038,
+              fontWeight: FontWeight.w600,
+              height: 1.4,
+            ),
+          ),
+          SizedBox(height: width * 0.04),
+
+          // Answer options
+          ...(q['options'] as List<String>).asMap().entries.map((entry) {
+            final score = entry.key; // 0=best, 4=worst
+            final label = entry.value;
+            return GestureDetector(
+              onTap: () => _answerQuestion(score),
+              child: Container(
+                width: double.infinity,
+                margin: EdgeInsets.only(bottom: width * 0.025),
+                padding: EdgeInsets.symmetric(
+                  horizontal: width * 0.04,
+                  vertical: width * 0.035,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.06),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: Colors.white.withOpacity(0.15)),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 28,
+                      height: 28,
+                      decoration: BoxDecoration(
+                        color: _optionColor(score).withOpacity(0.2),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Center(
+                        child: Text(
+                          String.fromCharCode(65 + score), // A B C D E
+                          style: TextStyle(
+                            color: _optionColor(score),
+                            fontWeight: FontWeight.bold,
+                            fontSize: width * 0.03,
+                          ),
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: width * 0.03),
+                    Expanded(
+                      child: Text(
+                        label,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: width * 0.032,
+                        ),
+                      ),
+                    ),
+                    Icon(Icons.arrow_forward_ios_rounded,
+                        color: Colors.white38, size: width * 0.03),
+                  ],
+                ),
+              ),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
+  Color _optionColor(int score) {
+    const colors = [Colors.green, Colors.lightGreen, Colors.orange, Colors.deepOrange, Colors.red];
+    return colors[score.clamp(0, 4)];
   }
 
   Widget _buildAppBar(double width) {
@@ -783,6 +1097,50 @@ class _StressDetectionScreenState extends State<StressDetectionScreen>
   }
 
   Widget _buildActionButton(double width) {
+    if (_useQuestionnaire) {
+      final isRetake = _stressScore > 0 && !_quizInProgress;
+      return GestureDetector(
+        onTap: _startQuestionnaire,
+        child: Container(
+          width: double.infinity,
+          padding: EdgeInsets.all(width * 0.045),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFF667eea), Color(0xFF764ba2)],
+            ),
+            borderRadius: BorderRadius.circular(25),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF667eea).withValues(alpha: 0.4),
+                blurRadius: 25,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                isRetake ? Icons.refresh_rounded : Icons.quiz_outlined,
+                color: Colors.white,
+                size: width * 0.06,
+              ),
+              SizedBox(width: width * 0.02),
+              Text(
+                isRetake ? "Retake Quiz" : "Start Stress Quiz",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: width * 0.04,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // Biometric mode (original)
     return GestureDetector(
       onTap: _isAnalyzing ? _stopAnalysis : startAnalysis,
       child: Container(
@@ -791,14 +1149,14 @@ class _StressDetectionScreenState extends State<StressDetectionScreen>
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: _isAnalyzing
-                ? [Colors.red.withOpacity(0.8), Colors.red]
+                ? [Colors.red.withValues(alpha: 0.8), Colors.red]
                 : [const Color(0xFF667eea), const Color(0xFF764ba2)],
           ),
           borderRadius: BorderRadius.circular(25),
           boxShadow: [
             BoxShadow(
               color: (_isAnalyzing ? Colors.red : const Color(0xFF667eea))
-                  .withOpacity(0.4),
+                  .withValues(alpha: 0.4),
               blurRadius: 25,
               offset: const Offset(0, 8),
             ),
@@ -811,17 +1169,10 @@ class _StressDetectionScreenState extends State<StressDetectionScreen>
               const SizedBox(
                 width: 24,
                 height: 24,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: Colors.white,
-                ),
+                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
               )
             else
-              Icon(
-                Icons.fingerprint,
-                color: Colors.white,
-                size: width * 0.06,
-              ),
+              Icon(Icons.fingerprint, color: Colors.white, size: width * 0.06),
             SizedBox(width: width * 0.02),
             Text(
               _isAnalyzing
