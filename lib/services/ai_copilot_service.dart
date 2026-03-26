@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AICopilotService {
-  final String apiKey = "AIzaSyAvBMK-7WsIYP5Pj27pTX8F37BYWrKnzFM";
+  final String apiKey = "AIzaSyBxG1vXZ-nVU7EpuwOfsV_aAvRThVv76gY";
   final SupabaseClient _client = Supabase.instance.client;
 
   Future<String> getPersonalizedRecommendations({

@@ -3,7 +3,7 @@ import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 
 class AIService {
-  final String apiKey = "AIzaSyAvBMK-7WsIYP5Pj27pTX8F37BYWrKnzFM";
+  final String apiKey = "AIzaSyBxG1vXZ-nVU7EpuwOfsV_aAvRThVv76gY";
   Future<String> _sendRequest(String prompt, {Uint8List? imageBytes}) async {
     try {
       final url = Uri.parse(
