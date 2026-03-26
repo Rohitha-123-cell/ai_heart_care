@@ -4,7 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/health_insight.dart';
 
 class HealthInsightService {
-  final String apiKey = "AIzaSyDrt5GFcj6nDVKZ7YwyzC8T7D_tV1Xnd7w";
+  final String apiKey = "AIzaSyAvBMK-7WsIYP5Pj27pTX8F37BYWrKnzFM";
   final SupabaseClient _client = Supabase.instance.client;
 
   /// Combine all health data and generate comprehensive insights

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import '../../services/report_generator_service.dart';
 import '../../services/health_data_provider.dart';
 import '../../core/utils/responsive.dart';
+import '../../utils/web_utils.dart';
 class HealthReportScreen extends StatefulWidget {
   const HealthReportScreen({super.key});
   @override
@@ -76,6 +78,24 @@ class _HealthReportScreenState extends State<HealthReportScreen> with SingleTick
       reportContent: _reportContent,
       fileName: 'health_report_${DateTime.now().millisecondsSinceEpoch}',
     );
+  }
+
+  void _downloadReport() {
+    final fileName = 'health_report_${DateTime.now().millisecondsSinceEpoch}.txt';
+    if (kIsWeb) {
+      downloadTextFile(_reportContent, fileName);
+    } else {
+      _reportService.saveAndShareReport(
+        reportContent: _reportContent,
+        fileName: fileName,
+      );
+    }
+  }
+
+  void _printReport() {
+    if (kIsWeb) {
+      printPage();
+    }
   }
 
   @override
@@ -670,7 +690,7 @@ class _HealthReportScreenState extends State<HealthReportScreen> with SingleTick
               SizedBox(width: width * 0.025),
               Expanded(
                 child: GestureDetector(
-                  onTap: _shareReport,
+                  onTap: _downloadReport,
                   child: Container(
                     padding: EdgeInsets.all(width * 0.035),
                     decoration: BoxDecoration(
@@ -685,7 +705,7 @@ class _HealthReportScreenState extends State<HealthReportScreen> with SingleTick
               SizedBox(width: width * 0.025),
               Expanded(
                 child: GestureDetector(
-                  onTap: _shareReport,
+                  onTap: _printReport,
                   child: Container(
                     padding: EdgeInsets.all(width * 0.035),
                     decoration: BoxDecoration(

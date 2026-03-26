@@ -1,5 +1,6 @@
-import 'dart:io';
-import 'package:path_provider/path_provider.dart';
+import 'dart:convert';
+import 'dart:typed_data';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:share_plus/share_plus.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -226,27 +227,28 @@ class ReportGeneratorService {
     required String fileName,
   }) async {
     try {
-      // Get temporary directory
-      Directory tempDir = await getTemporaryDirectory();
-      String filePath = '${tempDir.path}/$fileName.txt';
-      
-      // Write report to file
-      File file = File(filePath);
-      await file.writeAsString(reportContent);
-      
-      // Share file
-      await Share.shareXFiles([XFile(filePath)], text: 'My Health Report from AI Health Guardian');
-      
-      return {
-        'path': filePath,
-        'status': 'success',
-      };
+      if (kIsWeb) {
+        // Web: use text-only sharing (Web Share API supports text on all browsers)
+        await Share.share(
+          reportContent,
+          subject: 'Health Report - AI Health Guardian',
+        );
+      } else {
+        // Mobile: share as a file attachment
+        final Uint8List bytes = Uint8List.fromList(utf8.encode(reportContent));
+        final XFile xFile = XFile.fromData(
+          bytes,
+          name: '$fileName.txt',
+          mimeType: 'text/plain',
+        );
+        await Share.shareXFiles(
+          [xFile],
+          text: 'My Health Report from AI Health Guardian',
+        );
+      }
+      return {'path': fileName, 'status': 'success'};
     } catch (e) {
-      print('Error saving/sharing report: $e');
-      return {
-        'path': '',
-        'status': 'error: ${e.toString()}',
-      };
+      return {'path': '', 'status': 'error: ${e.toString()}'};
     }
   }
 
