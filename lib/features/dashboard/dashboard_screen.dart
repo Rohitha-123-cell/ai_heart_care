@@ -15,6 +15,8 @@ import '../health_report/health_report_screen.dart';
 import '../heart_rate/heart_rate_screen.dart';
 import '../heart_risk/heart_risk_screen.dart';
 import '../hospitals/map_screen.dart';
+import '../menstrual_cycle/menstrual_cycle_screen.dart';
+
 import '../profile/user_profile_screen.dart';
 import '../risk_prediction/risk_prediction_screen.dart';
 import '../scanner/medicine_scanner.dart';
